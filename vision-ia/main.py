@@ -118,6 +118,12 @@ def extract_with_vision(image_path: str) -> dict[str, Any]:
         structured = {"value": structured}
 
     text = parsed.get("text", "")
+    
+    # DEBUG: Imprimir el resultado final
+    print(f"[OCR] Resultado final - text: {text[:50] if text else 'None'}...")
+    print(f"[OCR] Structured JSON: {json.dumps(structured, indent=2)}")
+    
+    
     return {"text": text, "structured": structured}
 
 

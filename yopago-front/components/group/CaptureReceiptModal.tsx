@@ -6,7 +6,6 @@ import {
 import { type GroupMember } from '@/services/types';
 import React from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CaptureReceiptModalProps {
   visible: boolean;
@@ -29,16 +28,14 @@ export function CaptureReceiptModal({
   onReceiptReady,
   processReceipt,
 }: CaptureReceiptModalProps) {
-  const insets = useSafeAreaInsets();
-
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={[styles.container]}>
         <CaptureReceiptContent
           groupId={groupId}
           groupMembers={groupMembers}

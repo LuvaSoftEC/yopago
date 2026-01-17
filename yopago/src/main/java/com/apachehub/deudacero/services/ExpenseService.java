@@ -574,6 +574,10 @@ public class ExpenseService {
         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
         com.fasterxml.jackson.databind.JsonNode node = mapper.valueToTree(ocrStructured);
 
+        // DEBUG: Imprimir el JSON recibido
+        System.out.println("[ExpenseService] OCR Structured recibido: "
+                + mapper.writerWithDefaultPrettyPrinter().writeValueAsString(node));
+
         java.util.function.Function<com.fasterxml.jackson.databind.JsonNode, Double> parseDouble = value -> {
             if (value == null || value.isNull()) {
                 return null;

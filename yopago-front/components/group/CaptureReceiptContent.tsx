@@ -209,8 +209,15 @@ export function CaptureReceiptContent({
   const requestPermissions = useCallback(async () => {
     try {
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
-      const mediaPermission = await MediaLibrary.requestPermissionsAsync();
       const galleryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      // MediaLibrary is optional, skip if it fails
+      let mediaPermission = { status: 'granted' };
+      try {
+        mediaPermission = await MediaLibrary.requestPermissionsAsync();
+      } catch (e) {
+        console.warn('MediaLibrary permission request failed, continuing anyway');
+      }
 
       setPermissions({
         camera: cameraPermission.status === 'granted',
