@@ -30,11 +30,16 @@ k8s/
 
 ### 1. Create Secrets
 
+**⚠️ CRITICAL: Replace default passwords before deploying!**
+
 First, update the secrets in `base/namespace-and-secrets.yaml` with strong passwords:
 
 ```bash
 # Generate strong passwords
 openssl rand -base64 32
+
+# Edit the file and replace REPLACE_WITH_STRONG_PASSWORD with the generated values
+vi base/namespace-and-secrets.yaml
 ```
 
 ### 2. Deploy All Services
