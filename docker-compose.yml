@@ -32,8 +32,8 @@ services:
       KC_HTTP_RELATIVE_PATH: "/"
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_HOSTNAME_URL: http://localhost:8082
-      KC_HOSTNAME_ADMIN_URL: http://localhost:8082
+      KC_HOSTNAME_URL: http://10.0.2.2:8082
+      KC_HOSTNAME_ADMIN_URL: http://10.0.2.2:8082
       YOPAGO_BACKEND_URL: http://yopago-backend:8080
     ports:
       - "8082:8080"
@@ -56,7 +56,7 @@ services:
       HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
       APP_NAME: yopago
       VISION_IA_SERVICE_BASE_URL: http://vision-ia:8001
-      KEYCLOAK_BASE_URL: "http://localhost:8082"
+      KEYCLOAK_BASE_URL: "http://10.0.2.2:8082"
       KEYCLOAK_INTERNAL_URL: "http://keycloak:8080"
       KEYCLOAK_AUTH_SERVER_URL: "http://keycloak:8080"
       KEYCLOAK_CREDENTIALS_SECRET: ${KEYCLOAK_CLIENT_SECRET}

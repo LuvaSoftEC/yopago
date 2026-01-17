@@ -10,7 +10,7 @@ Una aplicación React Native con Expo que permite dividir gastos fácilmente med
 - ✅ **División automática** de gastos entre miembros del grupo
 - ✅ **Interfaz moderna** con soporte para tema claro/oscuro
 
-## 📱 Pantallas Implementadas
+##  Implemented Screens
 
 1. **Pantalla Principal** - Hub central con acceso a todas las funcionalidades
 2. **Crear Grupo** - Formulario para crear nuevos grupos de gastos
