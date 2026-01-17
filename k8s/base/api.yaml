@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopago-api
+  namespace: yopago
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yopago-api
+  template:
+    metadata:
+      labels:
+        app: yopago-api
+    spec:
+      containers:
+      - name: api
+        image: yopago-api:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: DATABASE_URL
+          value: jdbc:postgresql://postgres:5432/yopago
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: yopago-secrets
+              key: POSTGRES_USER
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: yopago-secrets
+              key: POSTGRES_PASSWORD
+        - name: KEYCLOAK_ISSUER_URI
+          value: http://keycloak:8080/realms/yopago
+        - name: KEYCLOAK_JWK_SET_URI
+          value: http://keycloak:8080/realms/yopago/protocol/openid-connect/certs
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: yopago-config
+              key: SPRING_PROFILES_ACTIVE
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yopago-api
+  namespace: yopago
+spec:
+  selector:
+    app: yopago-api
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP

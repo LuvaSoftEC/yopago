@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: yopago-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-yopago}
+      POSTGRES_USER: ${POSTGRES_USER:-yopago}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yopago123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - yopago-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yopago"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: yopago-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KC_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_USER:-yopago}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-yopago123}
+      KC_HTTP_PORT: 8180
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./keycloak/realm-config:/opt/keycloak/data/import
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - yopago-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8180;echo -e \"GET /health/ready HTTP/1.1\r\nhost: 127.0.0.1:8180\r\nConnection: close\r\n\r\n\" >&3;grep \"HTTP/1.1 200 OK\" <&3"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: yopago-api
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-yopago}
+      DATABASE_USER: ${POSTGRES_USER:-yopago}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-yopago123}
+      KEYCLOAK_ISSUER_URI: http://keycloak:8180/realms/yopago
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8180/realms/yopago/protocol/openid-connect/certs
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - yopago-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  yopago-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

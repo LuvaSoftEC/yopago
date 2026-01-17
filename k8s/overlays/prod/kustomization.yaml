@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: yopago
+
+resources:
+  - ../../base/namespace-and-secrets.yaml
+  - ../../base/postgres.yaml
+  - ../../base/keycloak.yaml
+  - ../../base/api.yaml
+  - ../../base/ingress.yaml
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: yopago-api

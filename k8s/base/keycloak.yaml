@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-pvc
+  namespace: yopago
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: yopago
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:23.0
+        args:
+        - start
+        - --import-realm
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: KEYCLOAK_ADMIN
+          valueFrom:
+            secretKeyRef:
+              name: yopago-secrets
+              key: KEYCLOAK_ADMIN
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: yopago-secrets
+              key: KEYCLOAK_ADMIN_PASSWORD
+        - name: KC_DB
+          value: postgres
+        - name: KC_DB_URL
+          value: jdbc:postgresql://postgres:5432/keycloak
+        - name: KC_DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: yopago-secrets
+              key: POSTGRES_USER
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: yopago-secrets
+              key: POSTGRES_PASSWORD
+        - name: KC_HOSTNAME_STRICT
+          value: "false"
+        - name: KC_PROXY
+          value: edge
+        - name: KC_HTTP_ENABLED
+          value: "true"
+        volumeMounts:
+        - name: keycloak-data
+          mountPath: /opt/keycloak/data
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      - name: keycloak-data
+        persistentVolumeClaim:
+          claimName: keycloak-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: yopago
+spec:
+  selector:
+    app: keycloak
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP

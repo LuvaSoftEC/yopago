@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "YoPago",
+    "slug": "yopago-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yopago.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.yopago.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": process.env.API_URL || "http://localhost:8080",
+      "keycloakUrl": process.env.KEYCLOAK_URL || "http://localhost:8180",
+      "keycloakRealm": process.env.KEYCLOAK_REALM || "yopago",
+      "keycloakClientId": process.env.KEYCLOAK_CLIENT_ID || "yopago-mobile"
+    }
+  }
+}
