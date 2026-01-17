@@ -34,7 +34,7 @@ Native](https://img.shields.io/badge/React%20Native-Expo-blue.svg)](https://expo
     shared expenses\
 -   💳 **Smart Expense Splitting** --- Automatic or custom cost
     distribution\
--   📸 **Receipt OCR** --- AI‑powered extraction using the `vision-ia`
+-   📸 **Receipt ** --- AI‑powered extraction using the `vision-ia`
     service\
 -   👤 **Guest Participants** --- Add contributors without full
     accounts\
@@ -58,7 +58,7 @@ Native](https://img.shields.io/badge/React%20Native-Expo-blue.svg)](https://expo
 |-----------|-------------|----------|
 | ![My Groups](./yopago-front/assets/images/screenshots/mygroups.png) | ![Create Group](./yopago-front/assets/images/screenshots/group.png) | ![Expenses](./yopago-front/assets/images/screenshots/expenses.png) |
 
-### Receipt Capture with OCR
+### Receipt Capture processed with IA Gpt model
 | Capture Receipt | Receipt Preview | Processing |
 |-----------------|-----------------|------------|
 | ![Capture](./yopago-front/assets/images/screenshots/receipt-capture.png) | ![Preview](./yopago-front/assets/images/screenshots/receipt-capture-2.png) | ![Processing](./yopago-front/assets/images/screenshots/receipt-capture-3.png) |
