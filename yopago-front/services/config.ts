@@ -115,7 +115,7 @@ export const API_CONFIG = {
 export const KEYCLOAK_CONFIG = {
   // URL de tu servidor Keycloak (ajusta según tu configuración)
   // ISSUER: 'http://localhost:8082/realms/yopago', // Para pruebas locales
-  ISSUER: process.env.EXPO_PUBLIC_ISSUER || 'http://157.230.203.194/realms/yopago', // DO K8s Ingress
+  ISSUER: process.env.EXPO_PUBLIC_ISSUER || 'http://localhost:8082/realms/yopago',
   
 
 
