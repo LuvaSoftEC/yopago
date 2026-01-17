@@ -1,0 +1,24 @@
+# Azure Pipelines - Build & Deploy Template Entry Point
+stages:
+
+# Build backend services
+- template: 1_build.yml
+  parameters:
+    stageName: BuildServices
+    displayName: 'Build & Push services'
+    MAVEN_POM: 'yopago/pom.xml'
+    MAVEN_GOALS: 'clean install -DskipTests=false'
+    MAVEN_OPTS: '-Xmx1g'
+
+- template: 5_deploy_do.yml
+  parameters:
+    stageName: DeployToDOKS
+    displayName: 'Deploy to DigitalOcean Kubernetes'
+    dependsOn:
+      - BuildServices
+    KUBERNETES_SERVICE_CONNECTION: '$(K8S_SERVICE_CONNECTION)'
+    NAMESPACE: '$(K8S_NAMESPACE)'
+    MANIFEST_PATH: 'k8s/*.yaml'
+    BACKEND_IMAGE: $[ coalesce(stageDependencies.BuildServices.build_backend.outputs['push_backend_image.builtImage'], '') ]
+    VISION_IMAGE:  $[ coalesce(stageDependencies.BuildServices.build_ocr.outputs['push_ocr_image.builtImage'], '') ]
+    KEYCLOAK_IMAGE: $[ coalesce(stageDependencies.BuildServices.build_keycloak.outputs['push_keycloak_image.builtImage'], '') ]

@@ -1,0 +1,33 @@
+parameters:
+  stageName: DockerBuild
+  displayName: 'Docker Build'
+  jobName: docker_build_push
+  DOCKERFILE: ''
+  DOCKER_CONTEXT: '.'
+  DOCKER_REPO: ''
+  DOCKER_TAG: ''
+  DOCKER_REGISTRY: ''
+
+stages:
+- stage: ${{ parameters.stageName }}
+  displayName: ${{ parameters.displayName }}
+  jobs:
+  - job: ${{ parameters.jobName }}
+    displayName: 'Docker: ${{ parameters.DOCKER_REPO }}:${{ parameters.DOCKER_TAG }}'
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+      - checkout: self
+      - task: AzureCLI@2
+        displayName: 'Login to ACR'
+        inputs:
+          azureSubscription: $(AZURE_SUBSCRIPTION)
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            az acr login -n $(ACR_NAME)
+      - bash: |
+          set -e
+          IMAGE="${{ parameters.DOCKER_REGISTRY }}/${{ parameters.DOCKER_REPO }}:${{ parameters.DOCKER_TAG }}"
+          docker build -f ${{ parameters.DOCKERFILE }} -t "$IMAGE" ${{ parameters.DOCKER_CONTEXT }}
+          docker push "$IMAGE"
+        displayName: 'Build and Push'

@@ -1,0 +1,50 @@
+parameters:
+  stageName: DeployDO
+  displayName: 'Deploy to Kubernetes'
+  dependsOn: []
+  KUBERNETES_SERVICE_CONNECTION: ''
+  NAMESPACE: 'default'
+  MANIFEST_PATH: 'k8s/*.yaml'
+  BACKEND_IMAGE: ''
+  VISION_IMAGE: ''
+  KEYCLOAK_IMAGE: ''
+
+stages:
+- stage: ${{ parameters.stageName }}
+  displayName: ${{ parameters.displayName }}
+  dependsOn: ${{ parameters.dependsOn }}
+  jobs:
+  - job: deploy_kubernetes
+    displayName: 'Deploy to Kubernetes'
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+      - checkout: self
+      - task: KubernetesManifest@1
+        displayName: 'Create ConfigMap'
+        inputs:
+          action: 'deploy'
+          kubernetesServiceConnection: ${{ parameters.KUBERNETES_SERVICE_CONNECTION }}
+          namespace: ${{ parameters.NAMESPACE }}
+          manifests: |
+            k8s/configmap.yaml
+      - task: KubernetesManifest@1
+        displayName: 'Create Secrets'
+        inputs:
+          action: 'createSecret'
+          kubernetesServiceConnection: ${{ parameters.KUBERNETES_SERVICE_CONNECTION }}
+          namespace: ${{ parameters.NAMESPACE }}
+          secretType: 'generic'
+          secretName: 'yopago-secrets'
+          secretArguments: |
+            --from-literal=DB_PASS=$(POSTGRES_PASSWORD) \
+            --from-literal=KEYCLOAK_ADMIN_PASSWORD=$(KEYCLOAK_ADMIN_PASSWORD) \
+            --from-literal=KEYCLOAK_CLIENT_SECRET=$(KEYCLOAK_CLIENT_SECRET) \
+            --from-literal=OPENAI_API_KEY=$(OPENAI_API_KEY)
+      - task: KubernetesManifest@1
+        displayName: 'Deploy Manifests'
+        inputs:
+          action: 'deploy'
+          kubernetesServiceConnection: ${{ parameters.KUBERNETES_SERVICE_CONNECTION }}
+          namespace: ${{ parameters.NAMESPACE }}
+          manifests: |
+            ${{ parameters.MANIFEST_PATH }}

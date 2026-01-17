@@ -1,0 +1,147 @@
+parameters:
+  - name: stageName
+    type: string
+    default: BuildServices
+  - name: displayName
+    type: string
+    default: 'Build & Push Services'
+  - name: channel
+    type: string
+    default: testing
+  - name: MAVEN_POM
+    type: string
+    default: ''
+  - name: MAVEN_GOALS
+    type: string
+    default: ''
+  - name: MAVEN_OPTS
+    type: string
+    default: ''
+  - name: javaVersion
+    type: string
+    default: '21'
+
+stages:
+- stage: ${{ parameters.stageName }}
+  displayName: ${{ parameters.displayName }}
+  jobs:
+  - job: build_backend
+    displayName: 'Build Backend (Maven)'
+    condition: ne('${{ parameters.MAVEN_POM }}', '')
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+      - checkout: self
+        fetchDepth: 0
+      - bash: |
+          set -e
+          JAVA_HOME_PATH=$(readlink -f /usr/lib/jvm/java-${{ parameters.javaVersion }}-openjdk-amd64)
+          echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_PATH"
+          echo "##vso[task.prependpath]$JAVA_HOME_PATH/bin"
+          java -version
+        displayName: 'Set Java ${{ parameters.javaVersion }}'
+      - bash: |
+          set -e
+          cd $(dirname "${{ parameters.MAVEN_POM }}")
+          mvn ${{ parameters.MAVEN_GOALS }} -o${{ parameters.MAVEN_OPTS }} -B
+        displayName: 'Maven Build'
+
+  - job: build_backend
+    condition: succeeded()
+    displayName: backend (yopago)
+    pool: { name: 'Apache Machines' }
+    steps:
+      - checkout: self
+        fetchDepth: 0
+
+      - bash: |
+          set -e
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
+          javac -version || true
+        displayName: 'Check Java preinstalado'
+
+      - bash: |
+          set -e
+          cd yopago
+          MVNW=./mvnw; [ -f "$MVNW" ] || MVNW=mvn; chmod +x ./mvnw || true
+          $MVNW -B -DskipTests clean package
+        displayName: 'Maven package (skip tests)'
+
+      - bash: |
+          set -e
+          if [ -z "$(DOCKER_REGISTRY)" ] || [ -z "$(DOCKER_NAMESPACE)" ] || [ -z "$(DOCKER_USERNAME)" ] || [ -z "$(DOCKER_PASSWORD)" ]; then
+            echo "DOCKER_REGISTRY / DOCKER_NAMESPACE / DOCKER_USERNAME / DOCKER_PASSWORD no están configurados"
+            exit 1
+          fi
+          echo "Haciendo login en el registry $(DOCKER_REGISTRY) como $(DOCKER_USERNAME)"
+          echo "$(DOCKER_PASSWORD)" | docker login "$(DOCKER_REGISTRY)" -u "$(DOCKER_USERNAME)" --password-stdin
+        displayName: 'Docker login (registry genérico)'
+
+      - bash: |
+          set -e
+          TAG="latest"
+          IMAGE="$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/yopago-backend:$TAG"
+          echo "Construyendo imagen $IMAGE"
+          docker build -f yopago/Dockerfile -t "$IMAGE" yopago
+          docker push "$IMAGE"
+          echo "##vso[task.setvariable variable=builtImage;isOutput=true]$IMAGE"
+        displayName: 'Build & push backend'
+        name: push_backend_image
+
+
+
+  - job: build_ocr
+    displayName: vision-ia (python)
+    condition: succeeded()
+    pool: { name: 'Apache Machines' }
+    steps:
+      - checkout: self
+
+      - bash: |
+          set -e
+          if [ -z "$(DOCKER_REGISTRY)" ] || [ -z "$(DOCKER_NAMESPACE)" ] || [ -z "$(DOCKER_USERNAME)" ] || [ -z "$(DOCKER_PASSWORD)" ]; then
+            echo "DOCKER_REGISTRY / DOCKER_NAMESPACE / DOCKER_USERNAME / DOCKER_PASSWORD no están configurados"
+            exit 1
+          fi
+          echo "Haciendo login en el registry $(DOCKER_REGISTRY) como $(DOCKER_USERNAME)"
+          echo "$(DOCKER_PASSWORD)" | docker login "$(DOCKER_REGISTRY)" -u "$(DOCKER_USERNAME)" --password-stdin
+        displayName: 'Docker login (registry genérico)'
+
+      - bash: |
+          set -e
+          TAG="latest"
+          IMAGE="$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/yopago-vision-ia:$TAG"
+          echo "Construyendo imagen $IMAGE"
+          docker build -f vision-ia/Dockerfile -t "$IMAGE" vision-ia
+          docker push "$IMAGE"
+          echo "##vso[task.setvariable variable=builtImage;isOutput=true]$IMAGE"
+        displayName: 'Build & push vision-ia'
+        name: push_ocr_image
+
+  - job: build_keycloak
+    displayName: keycloak
+    condition: succeeded()
+    pool: { name: 'Apache Machines' }
+    steps:
+      - checkout: self
+
+      - bash: |
+          set -e
+          if [ -z "$(DOCKER_REGISTRY)" ] || [ -z "$(DOCKER_NAMESPACE)" ] || [ -z "$(DOCKER_USERNAME)" ] || [ -z "$(DOCKER_PASSWORD)" ]; then
+            echo "DOCKER_REGISTRY / DOCKER_NAMESPACE / DOCKER_USERNAME / DOCKER_PASSWORD no están configurados"
+            exit 1
+          fi
+          echo "Haciendo login en el registry $(DOCKER_REGISTRY) como $(DOCKER_USERNAME)"
+          echo "$(DOCKER_PASSWORD)" | docker login "$(DOCKER_REGISTRY)" -u "$(DOCKER_USERNAME)" --password-stdin
+        displayName: 'Docker login (registry genérico)'
+
+      - bash: |
+          set -e
+          TAG="latest"
+          IMAGE="$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/yopago-keycloak:$TAG"
+          echo "Construyendo imagen $IMAGE"
+          docker build -f keycloak/Dockerfile -t "$IMAGE" keycloak
+          docker push "$IMAGE"
+          echo "##vso[task.setvariable variable=builtImage;isOutput=true]$IMAGE"
+        displayName: 'Build & push keycloak'
+        name: push_keycloak_image

@@ -1,0 +1,19 @@
+trigger:
+  branches:
+    include: [ dev, test, main ]
+  paths:
+    include: [ '*' ]
+
+variables:
+  - ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/dev') }}:
+      - group: yopago-dev
+
+  - ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/test') }}:
+      - group: yopago-test
+
+  - ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      - group: yopago-prod
+
+
+extends:
+  template: template/init.yml

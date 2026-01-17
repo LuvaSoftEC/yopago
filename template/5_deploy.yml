@@ -1,0 +1,59 @@
+parameters:
+  stageName: Deploy
+  displayName: 'Deploy to Azure'
+  dependsOn: []
+  AZURE_SUBSCRIPTION: ''
+  AZURE_RG: ''
+  ACR_LOGIN_SERVER: ''
+  BACKEND_IMAGE: ''
+  OCR_IMAGE: ''
+  KEYCLOAK_IMAGE: ''
+  ACA_ENV_NAME: ''
+  ACA_BACKEND_NAME: ''
+  ACA_OCR_NAME: ''
+  ACA_KEYCLOAK_NAME: ''
+  WEBAPP_NAME: ''
+  FRONT_ARTIFACT_NAME: 'front'
+  frontBuildResult: ''
+
+stages:
+- stage: ${{ parameters.stageName }}
+  displayName: ${{ parameters.displayName }}
+  dependsOn: ${{ parameters.dependsOn }}
+  jobs:
+  - deployment: deploy_azure
+    environment: $(CHANNEL)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureCLI@2
+            displayName: 'Deploy Container Apps'
+            inputs:
+              azureSubscription: ${{ parameters.AZURE_SUBSCRIPTION }}
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -e
+                if [ -n "${{ parameters.BACKEND_IMAGE }}" ]; then
+                  az containerapp update -g '${{ parameters.AZURE_RG }}' -n '${{ parameters.ACA_BACKEND_NAME }}' \
+                    --image '${{ parameters.BACKEND_IMAGE }}' --registry-server '${{ parameters.ACR_LOGIN_SERVER }}'
+                fi
+                if [ -n "${{ parameters.OCR_IMAGE }}" ]; then
+                  az containerapp update -g '${{ parameters.AZURE_RG }}' -n '${{ parameters.ACA_OCR_NAME }}' \
+                    --image '${{ parameters.OCR_IMAGE }}' --registry-server '${{ parameters.ACR_LOGIN_SERVER }}'
+                fi
+                if [ -n "${{ parameters.KEYCLOAK_IMAGE }}" ]; then
+                  az containerapp update -g '${{ parameters.AZURE_RG }}' -n '${{ parameters.ACA_KEYCLOAK_NAME }}' \
+                    --image '${{ parameters.KEYCLOAK_IMAGE }}' --registry-server '${{ parameters.ACR_LOGIN_SERVER }}'
+                fi
+          - download: current
+            artifact: ${{ parameters.FRONT_ARTIFACT_NAME }}
+            condition: and(succeeded(), eq('${{ parameters.frontBuildResult }}', 'Succeeded'))
+          - task: AzureWebApp@1
+            displayName: 'Deploy Frontend'
+            condition: and(succeeded(), eq('${{ parameters.frontBuildResult }}', 'Succeeded'))
+            inputs:
+              azureSubscription: ${{ parameters.AZURE_SUBSCRIPTION }}
+              appName: ${{ parameters.WEBAPP_NAME }}
+              package: '$(Pipeline.Workspace)/${{ parameters.FRONT_ARTIFACT_NAME }}/${{ parameters.FRONT_ARTIFACT_NAME }}.zip'

@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopago-vision-ia
+  labels:
+    app: yopago-vision-ia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yopago-vision-ia
+  template:
+    metadata:
+      labels:
+        app: yopago-vision-ia
+    spec:
+      containers:
+        - name: vision-ia
+          image: registry.digitalocean.com/yopago-registry/yopago-vision-ia:latest
+          ports:
+            - containerPort: 8001
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vision-ia-openai
+                  key: OPENAI_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vision-ia
+  labels:
+    app: yopago-vision-ia
+spec:
+  type: ClusterIP
+  selector:
+    app: yopago-vision-ia
+  ports:
+    - port: 8001
+      targetPort: 8001
