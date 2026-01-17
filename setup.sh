@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # YoPago Setup Script
 # This script helps set up the YoPago development environment

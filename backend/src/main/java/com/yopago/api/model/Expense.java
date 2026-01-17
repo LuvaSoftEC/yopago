@@ -1,6 +1,7 @@
 package com.yopago.api.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,7 @@ public class Expense {
     private String description;
     
     @Column(nullable = false, precision = 10, scale = 2)
+    @DecimalMin(value = "0.01", message = "Amount must be at least 0.01")
     private BigDecimal amount;
     
     @Column(name = "paid_by", nullable = false)

@@ -4,8 +4,14 @@ import { Button, Text } from 'react-native-paper';
 
 export default function LoginScreen({ navigation }) {
   const handleLogin = () => {
-    // In a real app, this would handle Keycloak OAuth flow
-    // For now, navigate to home
+    // TODO: Implement actual OAuth2/OIDC authentication flow with Keycloak
+    // This is a placeholder that bypasses authentication for demo purposes
+    // See: https://docs.expo.dev/guides/authentication/#authsession
+    // 
+    // For production, use expo-auth-session with Keycloak endpoints:
+    // - Discovery URL: http://keycloak:8180/realms/yopago/.well-known/openid-configuration
+    // - Client ID: yopago-mobile (configured in Keycloak)
+    console.warn('⚠️ Using demo login bypass - implement proper OAuth2 flow for production');
     navigation.replace('Home');
   };
 
