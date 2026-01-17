@@ -48,17 +48,30 @@ Native](https://img.shields.io/badge/React%20Native-Expo-blue.svg)](https://expo
 
 ## 📸 Screenshots
 
-| Login | Home | My Groups |
-|-------|------|-----------|
-| ![Login](./yopago-front/assets/images/screenshots/login.png) | ![Home](./yopago-front/assets/images/screenshots/home.png) | ![My Groups](./yopago-front/assets/images/screenshots/mygroups.png) |
+### Authentication & Dashboard
+| Login | Register | Home |
+|-------|----------|------|
+| ![Login](./yopago-front/assets/images/screenshots/login.png) | ![Register](./yopago-front/assets/images/screenshots/register.png) | ![Home](./yopago-front/assets/images/screenshots/home.png) |
 
-| Create Group | Balance | Account |
-|-------------|---------|---------|
-| ![Create Group](./yopago-front/assets/images/screenshots/group.png) | ![Balance](./yopago-front/assets/images/screenshots/balance.png) | ![Account](./yopago-front/assets/images/screenshots/account.png) |
+### Group Management & Expenses
+| My Groups | Create Group | Expenses |
+|-----------|-------------|----------|
+| ![My Groups](./yopago-front/assets/images/screenshots/mygroups.png) | ![Create Group](./yopago-front/assets/images/screenshots/group.png) | ![Expenses](./yopago-front/assets/images/screenshots/expenses.png) |
+
+### Receipt Capture with OCR
+| Capture Receipt | Receipt Preview | Processing |
+|-----------------|-----------------|------------|
+| ![Capture](./yopago-front/assets/images/screenshots/receipt-capture.png) | ![Preview](./yopago-front/assets/images/screenshots/receipt-capture-2.png) | ![Processing](./yopago-front/assets/images/screenshots/receipt-capture-3.png) |
+
+### Account & Balance
+| Balance | Account |
+|---------|---------|
+| ![Balance](./yopago-front/assets/images/screenshots/balance.png) | ![Account](./yopago-front/assets/images/screenshots/account.png) |
 
 ------------------------------------------------------------------------
 
 ## 🎯 Purpose of the Project
+
 
 
 Deliver a practical, production‑style application that solves a real
