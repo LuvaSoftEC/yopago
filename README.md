@@ -54,7 +54,7 @@ Native](https://img.shields.io/badge/React%20Native-Expo-blue.svg)](https://expo
 
 | Create Group | Balance | Account |
 |-------------|---------|---------|
-| ![Create Group](./yopago-front/assets/images/screenshots/group.png) | ![Balance](./yopago-front/assets/images/screenshots/balance.png) | ![Account](./yopago-front/assets/screenshots/account.png) |
+| ![Create Group](./yopago-front/assets/images/screenshots/group.png) | ![Balance](./yopago-front/assets/images/screenshots/balance.png) | ![Account](./yopago-front/assets/images/screenshots/account.png) |
 
 ------------------------------------------------------------------------
 
