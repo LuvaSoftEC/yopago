@@ -13,15 +13,15 @@
       "env": {
         "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64",
         "ORG_GRADLE_JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64",
-        "EXPO_PUBLIC_BASE_URL": "http://157.230.203.194/api",
-        "EXPO_PUBLIC_ISSUER": "http://157.230.203.194/realms/yopago"
+        "EXPO_PUBLIC_BASE_URL": "http://localhost:8080/api",
+        "EXPO_PUBLIC_ISSUER": "http://localhost:8082/realms/yopago"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "http://157.230.203.194/api",
-        "EXPO_PUBLIC_ISSUER": "http://157.230.203.194/realms/yopago"
+        "EXPO_PUBLIC_BASE_URL": "http://localhost:8080/api",
+        "EXPO_PUBLIC_ISSUER": "http://localhost:8082/realms/yopago"
       }
     }
   },
