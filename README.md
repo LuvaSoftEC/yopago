@@ -50,11 +50,11 @@ Native](https://img.shields.io/badge/React%20Native-Expo-blue.svg)](https://expo
 
 | Login | Home | My Groups |
 |-------|------|-----------|
-| ![Login](./yopago-front/assets/screenshots/login.png) | ![Home](./yopago-front/assets/screenshots/home.png) | ![My Groups](./yopago-front/assets/screenshots/mygroups.png) |
+| ![Login](./yopago-front/assets/images/screenshots/login.png) | ![Home](./yopago-front/assets/images/screenshots/home.png) | ![My Groups](./yopago-front/assets/images/screenshots/mygroups.png) |
 
 | Create Group | Balance | Account |
 |-------------|---------|---------|
-| ![Create Group](./yopago-front/assets/screenshots/group.png) | ![Balance](./yopago-front/assets/screenshots/balance.png) | ![Account](./yopago-front/assets/screenshots/account.png) |
+| ![Create Group](./yopago-front/assets/images/screenshots/group.png) | ![Balance](./yopago-front/assets/images/screenshots/balance.png) | ![Account](./yopago-front/assets/screenshots/account.png) |
 
 ------------------------------------------------------------------------
 
