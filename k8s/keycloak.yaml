@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopago-keycloak
+  namespace: yopago
+  labels:
+    app: yopago-keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yopago-keycloak
+  template:
+    metadata:
+      labels:
+        app: yopago-keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: registry.digitalocean.com/yopago-registry/yopago-keycloak:latest
+          ports:
+            - containerPort: 8080
+          env:
+            # ===== DB CONFIG =====
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_URL
+              value: "jdbc:postgresql://db-postgresql-nyc3-yopago-do-user-29933578-0.j.db.ondigitalocean.com:25060/keycloak?sslmode=require"
+            - name: KC_DB_USERNAME
+              value: "doadmin"
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: yopago-db
+                  key: DB_PASS
+
+            # ===== ADMIN USER =====
+            - name: KEYCLOAK_ADMIN
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin
+                  key: KEYCLOAK_ADMIN_PASSWORD
+
+            # ===== NETWORK / INGRESS CONFIG (CLAVE) =====
+            - name: KC_HTTP_PORT
+              value: "8080"
+
+            - name: KC_HTTP_ENABLED
+              value: "true"
+
+            - name: KC_PROXY
+              value: "edge"
+
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
+
+            - name: KC_HOSTNAME_STRICT_HTTPS
+              value: "false"
+
+            - name: KC_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: yopago-config
+                  key: KC_HOSTNAME
+
+            - name: KC_HOSTNAME_ADMIN_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: yopago-config
+                  key: KC_HOSTNAME_URL
+
+            # ===== INTEGRACIÓN CON TU BACKEND =====
+            - name: YOPAGO_BACKEND_PUBLIC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: yopago-config
+                  key: YOPAGO_BACKEND_PUBLIC_URL
+
+            # ===== OBSERVABILITY =====
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_METRICS_ENABLED
+              value: "true"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: yopago
+  labels:
+    app: yopago-keycloak
+spec:
+  type: ClusterIP
+  selector:
+    app: yopago-keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080

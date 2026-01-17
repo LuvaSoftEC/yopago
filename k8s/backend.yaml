@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopago-backend
+  labels:
+    app: yopago-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yopago-backend
+  template:
+    metadata:
+      labels:
+        app: yopago-backend
+    spec:
+      containers:
+        - name: backend
+          image: registry.digitalocean.com/yopago-registry/yopago-backend:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "default"
+            - name: DB_URL
+              value: "jdbc:postgresql://db-postgresql-nyc3-yopago-do-user-29933578-0.j.db.ondigitalocean.com:25060/yopago?sslmode=require"
+            - name: DB_USER
+              value: "doadmin"
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: yopago-db
+                  key: DB_PASS
+            - name: DB_DRIVER
+              value: "org.postgresql.Driver"
+            - name: HIBERNATE_DDL
+              value: "update"
+            - name: SHOW_SQL
+              value: "true"
+            - name: HIBERNATE_DIALECT
+              value: "org.hibernate.dialect.PostgreSQLDialect"
+            - name: APP_NAME
+              value: "yopago"
+            - name: VISION_IA_SERVICE_BASE_URL
+              value: "http://vision-ia:8001"
+            - name: KEYCLOAK_BASE_URL
+              value: "http://keycloak:8080"
+            - name: KEYCLOAK_INTERNAL_URL
+              value: "http://keycloak:8080"
+            - name: KEYCLOAK_AUTH_SERVER_URL
+              value: "http://keycloak:8080"
+            - name: KEYCLOAK_CREDENTIALS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-client
+                  key: KEYCLOAK_CLIENT_SECRET
+            - name: KEYCLOAK_ADMIN_REALM
+              value: "master"
+            - name: KEYCLOAK_ADMIN_USERNAME
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: APP_FRONTEND_BASE_URL
+              value: "http://localhost"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yopago-backend
+  labels:
+    app: yopago-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: yopago-backend
+  ports:
+    - port: 8080
+      targetPort: 8080

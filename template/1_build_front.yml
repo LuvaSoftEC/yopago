@@ -1,0 +1,33 @@
+parameters:
+  stageName: BuildFront
+  displayName: 'Build Frontend'
+  WORKDIR: ''
+  BUILD_CMD: ''
+  ARTIFACT_NAME: 'front'
+  ARTIFACT_PATH: ''
+
+stages:
+- stage: ${{ parameters.stageName }}
+  displayName: ${{ parameters.displayName }}
+  jobs:
+  - job: build_front
+    displayName: 'Build Frontend'
+    pool: { vmImage: 'ubuntu-latest' }
+    steps:
+      - checkout: self
+      - task: NodeTool@0
+        inputs: { versionSpec: '18.x' }
+      - bash: |
+          set -e
+          cd ${{ parameters.WORKDIR }}
+          npm ci
+          ${{ parameters.BUILD_CMD }}
+        displayName: 'Install and build'
+      - task: ArchiveFiles@2
+        inputs:
+          rootFolderOrFile: '${{ parameters.ARTIFACT_PATH }}'
+          includeRootFolder: false
+          archiveType: zip
+          archiveFile: '$(Build.ArtifactStagingDirectory)/${{ parameters.ARTIFACT_NAME }}.zip'
+      - publish: '$(Build.ArtifactStagingDirectory)/${{ parameters.ARTIFACT_NAME }}.zip'
+        artifact: ${{ parameters.ARTIFACT_NAME }}

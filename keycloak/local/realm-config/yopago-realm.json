@@ -1,0 +1,64 @@
+{
+  "realm": "yopago",
+  "enabled": true,
+  "displayName": "YoPago - Gestión de Gastos",
+  "accessTokenLifespan": 3600,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "Administrador completo" },
+      { "name": "user", "description": "Usuario regular" },
+      { "name": "group_manager", "description": "Gestor de grupos" }
+    ]
+  },
+  "defaultRoles": ["user"],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "email": "admin@yopago.com",
+      "credentials": [
+  { "type": "password", "value": "admin-pass", "temporary": false }
+      ],
+      "realmRoles": ["admin", "user"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "yopago-api",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+  "secret": "yopago-api-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ],
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "yopago-mobile",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:8082/*"
+      ],
+      "webOrigins": ["+"],
+      "fullScopeAllowed": true,
+      "attributes": { "pkce.code.challenge.method": "S256" }
+    }
+  ]
+}
