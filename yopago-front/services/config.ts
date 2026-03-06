@@ -11,7 +11,7 @@ const resolveBaseUrl = () => {
     }
   }
 
-  // Fallback si no hay EXPO_PUBLIC_BASE_URL definida (IP del Ingress en DO/K8s)
+  // Fallback if EXPO_PUBLIC_BASE_URL is not defined (Ingress IP on DO/K8s)
   return 'http://157.230.203.194/api';
 };
 
@@ -36,7 +36,7 @@ const resolveWebSocketUrl = () => {
     parsed.hash = '';
     return parsed.toString();
   } catch (error) {
-    console.warn('⚠️ No se pudo derivar automáticamente la URL de WebSocket, usando fallback:', error);
+    console.warn('⚠️ Could not automatically derive the WebSocket URL, using fallback:', error);
     const sanitized = baseUrl.replace(/\/api\/?$/, '');
     const normalized = sanitized.endsWith('/ws') ? sanitized : `${sanitized.replace(/\/$/, '')}/ws`;
     if (normalized.startsWith('https://')) {
@@ -50,92 +50,92 @@ const resolveWebSocketUrl = () => {
 };
 
 export const API_CONFIG = {
-  // URL base de tu API de Java
-  // Desarrollo local:
-  // BASE_URL: 'http://localhost:8080/api', // Para pruebas locales
+  // Base URL of your Java API
+  // Local development:
+  // BASE_URL: 'http://localhost:8080/api', // For local testing
   BASE_URL: baseUrl,
   WS_URL: resolveWebSocketUrl(),
   
-  // Para usar tu API en producción, cambia por algo como:
-  // BASE_URL: 'https://tu-servidor.com/api',
-  
-  // Para usar un emulador de Android (usa la IP del host):
+  // To use your API in production, change to something like:
+  // BASE_URL: 'https://your-server.com/api',
+
+  // To use an Android emulator (use the host IP):
   // BASE_URL: 'http://10.0.2.2:8080/api',
-  
-  // Para dispositivo físico, usa la IP de tu computadora:
+
+  // For a physical device, use your computer's IP:
   // BASE_URL: 'http://192.168.1.100:8080/api',
 
-  // Timeouts en milisegundos
-  TIMEOUT: 30000, // 30 segundos para procesamiento de imágenes
-  SHORT_TIMEOUT: 10000, // 10 segundos para operaciones rápidas
+  // Timeouts in milliseconds
+  TIMEOUT: 30000, // 30 seconds for image processing
+  SHORT_TIMEOUT: 10000, // 10 seconds for fast operations
 
-  // Configuración de autenticación (opcional)
-  // Si tu API requiere autenticación, descomenta estas líneas:
+  // Authentication configuration (optional)
+  // If your API requires authentication, uncomment these lines:
   /*
   AUTH: {
-    // Para Bearer token:
+    // For Bearer token:
     TOKEN_HEADER: 'Authorization',
     TOKEN_PREFIX: 'Bearer ',
-    
-    // Para API Key:
+
+    // For API Key:
     API_KEY_HEADER: 'X-API-Key',
   },
   */
 
-  // Configuración de headers por defecto
+  // Default headers configuration
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    // Agrega headers adicionales si tu API los requiere:
+    // Add additional headers if your API requires them:
     // 'X-App-Version': '1.0.0',
   },
 
-  // Configuración de endpoints
+  // Endpoints configuration
   ENDPOINTS: {
-    // Procesamiento de facturas
+    // Receipt processing
     PROCESS_RECEIPT: '/receipts/process',
-    
-    // Gestión de grupos
-    GROUPS: '/groups/create', // Actualizado para coincidir con tu API
-    USER_GROUPS: '/groups/user', // Obtener grupos del usuario
-    JOIN_GROUP: '/groups/join', // Endpoint para unirse a un grupo
+
+    // Groups management
+    GROUPS: '/groups/create', // Updated to match your API
+    USER_GROUPS: '/groups/user', // Get user groups
+    JOIN_GROUP: '/groups/join', // Endpoint to join a group
     GROUP_BY_ID: '/groups/:id',
-    GROUP_DETAILS: '/groups/:id/details', // Detalles completos del grupo
-    
+    GROUP_DETAILS: '/groups/:id/details', // Full group details
+
     // Health check
     HEALTH: '/health',
-    
-    // Autenticación (si la usas)
+
+    // Authentication (if used)
     // LOGIN: '/auth/login',
     // LOGOUT: '/auth/logout',
   },
 };
 
-// Configuración de Keycloak
+// Keycloak configuration
 export const KEYCLOAK_CONFIG = {
-  // URL de tu servidor Keycloak (ajusta según tu configuración)
-  // ISSUER: 'http://localhost:8082/realms/yopago', // Para pruebas locales
+  // URL of your Keycloak server (adjust according to your configuration)
+  // ISSUER: 'http://localhost:8082/realms/yopago', // For local testing
   ISSUER: process.env.EXPO_PUBLIC_ISSUER || 'http://localhost:8082/realms/yopago',
   
 
 
 
-  // Cliente configurado en Keycloak
-  CLIENT_ID: 'yopago-mobile', // Cliente para la aplicación móvil
-  
-  // URLs de redirección - Usamos el scheme personalizado de Expo
-  REDIRECT_URI: 'yopago://auth', // URL scheme personalizado
-  
-  // Scopes solicitados
+  // Client configured in Keycloak
+  CLIENT_ID: 'yopago-mobile', // Client for the mobile application
+
+  // Redirect URLs - We use Expo's custom scheme
+  REDIRECT_URI: 'yopago://auth', // Custom URL scheme
+
+  // Requested scopes
   SCOPES: ['openid', 'profile', 'email'],
-  
-  // Configuraciones adicionales
+
+  // Additional configurations
   ADDITIONAL_PARAMETERS: {},
-  
-  // Si usas un emulador de Android:
+
+  // If using an Android emulator:
   // ISSUER: 'http://10.0.2.2:8082/realms/yopago',
-  
-  // Si usas un dispositivo físico (cambia por la IP de tu computadora):
+
+  // If using a physical device (replace with your computer's IP):
   // ISSUER: 'http://192.168.1.100:8082/realms/yopago',
 };
 
@@ -161,11 +161,11 @@ export const KEYCLOAK_CONFIG = {
  * 5. GET /api/health
  *    Response: { status: "ok" }
  * 
- * Asegúrate de que tu API:
- * - Acepte JSON en el Content-Type
- * - Retorne JSON en las respuestas
- * - ⚠️ MANEJE CORS CORRECTAMENTE (ver instrucciones abajo)
- * - Tenga manejo de errores apropiado
+ * Make sure your API:
+ * - Accepts JSON in the Content-Type
+ * - Returns JSON in responses
+ * - ⚠️ HANDLES CORS CORRECTLY (see instructions below)
+ * - Has appropriate error handling
  */
 
 export default API_CONFIG;

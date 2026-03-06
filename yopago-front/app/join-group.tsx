@@ -26,7 +26,7 @@ export default function JoinGroupScreen() {
 
     setIsLoading(true);
     try {
-      console.log('🔗 Intentando unirse al grupo...');
+      console.log('🔗 Attempting to join group...');
       const result = await authenticatedApi.joinGroup(joinCode.trim());
 
       console.log('✅ Resultado:', result);

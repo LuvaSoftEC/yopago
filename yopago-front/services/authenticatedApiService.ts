@@ -11,7 +11,7 @@ import {
     ProcessReceiptResponse,
 } from './types';
 
-// Tipos para las respuestas del backend
+// Types for backend responses
 export interface ExpenseResponse {
   id: number;
   amount: number;
@@ -151,7 +151,7 @@ class AuthenticatedApiService {
     console.log('🔐 Making authenticated request to:', url);
     
     try {
-      // Obtener el token de acceso
+      // Get the access token
       const accessToken = await authService.getAccessToken();
       
       if (!accessToken) {
@@ -164,7 +164,7 @@ class AuthenticatedApiService {
         'Authorization': `Bearer ${accessToken}`,
       };
 
-      // Crear un AbortController para manejar timeout
+      // Create AbortController to handle timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
 
@@ -181,16 +181,16 @@ class AuthenticatedApiService {
       
       console.log('📡 Authenticated response status:', response.status);
 
-      // Si es 401, intentar refrescar el token
+      // If 401, attempt to refresh the token
       if (response.status === 401) {
-        console.log('🔄 Token expirado, intentando refrescar...');
+        console.log('🔄 Token expired, attempting to refresh...');
         
         try {
           const refreshed = await authService.refreshToken();
           const newToken = await authService.getAccessToken();
           
           if (refreshed && newToken) {
-            // Reintentar la request con el nuevo token
+            // Retry the request with the new token
             const retryResponse = await fetch(url, {
               ...options,
               headers: {
@@ -230,7 +230,7 @@ class AuthenticatedApiService {
     }
   }
 
-  // Verificar si el usuario está autenticado
+  // Check if user is authenticated
   private async ensureAuthenticated(): Promise<void> {
     const isAuth = await authService.isAuthenticated();
     if (!isAuth) {
@@ -238,19 +238,19 @@ class AuthenticatedApiService {
     }
   }
 
-  // === MÉTODOS DE GRUPOS ===
+  // === GROUP METHODS ===
 
   async getUserGroups(): Promise<any[]> {
     await this.ensureAuthenticated();
     
     try {
-      console.log('📋 Obteniendo grupos del usuario autenticado...');
+      console.log('📋 Fetching authenticated user groups...');
 
       const response = await this.makeAuthenticatedRequest<
         { groups?: any[]; createdGroups?: any[] } | any[]
       >('/groups/user');
 
-      console.log('✅ Grupos autenticados obtenidos:', response);
+      console.log('✅ Authenticated groups fetched:', response);
 
       if (Array.isArray(response)) {
         return response;
@@ -283,7 +283,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('🔍 Obteniendo detalles del grupo:', groupId);
+      console.log('🔍 Fetching group details:', groupId);
 
       const response = await this.makeAuthenticatedRequest<GroupDetailsResponse>(
         `/groups/${groupId}/details`,
@@ -292,10 +292,10 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Detalles del grupo obtenidos:', response);
+      console.log('✅ Group details fetched:', response);
       return response;
     } catch (error) {
-      console.error('❌ Error obteniendo detalles del grupo:', error);
+      console.error('❌ Error fetching group details:', error);
       throw new Error(error instanceof Error ? error.message : 'Error al cargar los detalles del grupo');
     }
   }
@@ -307,7 +307,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('🔧 Creando grupo:', groupData);
+      console.log('🔧 Creating group:', groupData);
 
       const response = await this.makeAuthenticatedRequest<CreateGroupResponse>(
         '/groups',
@@ -317,10 +317,10 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Grupo creado exitosamente:', response);
+      console.log('✅ Group created successfully:', response);
       return response;
     } catch (error) {
-      console.error('❌ Error creando grupo:', error);
+      console.error('❌ Error creating group:', error);
       throw new Error(error instanceof Error ? error.message : 'Error al crear el grupo');
     }
   }
@@ -329,9 +329,9 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('🔗 Uniéndose al grupo con código:', code);
+      console.log('🔗 Joining group with code:', code);
       
-      // No necesitamos memberId porque el backend lo obtiene del token JWT
+      // memberId not needed — backend gets it from the JWT token
       const request = {
         code: code.trim()
       };
@@ -344,7 +344,7 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Unido al grupo exitosamente:', response);
+      console.log('✅ Joined group successfully:', response);
       return response;
     } catch (error) {
       console.error('❌ Error joining authenticated group:', error);
@@ -356,7 +356,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('👥 Uniendo miembro invitado al grupo:', groupId, request);
+      console.log('👥 Adding guest member to group:', groupId, request);
       
       const response = await this.makeAuthenticatedRequest<JoinGroupMemberResponse>(
         `/groups/${groupId}/join`,
@@ -366,7 +366,7 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Miembro invitado unido exitosamente:', response);
+      console.log('✅ Guest member added successfully:', response);
       return response;
     } catch (error) {
       console.error('❌ Error joining group as invite:', error);
@@ -378,7 +378,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('👤 Uniendo miembro registrado al grupo:', groupId, request);
+      console.log('👤 Adding registered member to group:', groupId, request);
       
       const response = await this.makeAuthenticatedRequest<JoinGroupMemberResponse>(
         `/groups/${groupId}/join`,
@@ -388,7 +388,7 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Miembro registrado unido exitosamente:', response);
+      console.log('✅ Registered member added successfully:', response);
       return response;
     } catch (error) {
       console.error('❌ Error joining group as registered:', error);
@@ -400,7 +400,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
 
     try {
-      console.log('🗑️ Eliminando grupo:', groupId);
+      console.log('🗑️ Deleting group:', groupId);
 
       await this.makeAuthenticatedRequest<void>(
         `/groups/${groupId}`,
@@ -409,7 +409,7 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Grupo eliminado exitosamente');
+      console.log('✅ Group deleted successfully');
     } catch (error) {
       console.error('❌ Error deleting group:', error);
       throw new Error(error instanceof Error ? error.message : 'Error al eliminar el grupo');
@@ -433,7 +433,7 @@ class AuthenticatedApiService {
 
     for (const endpoint of endpoints) {
       try {
-        console.log('📇 Obteniendo usuarios registrados desde:', endpoint);
+        console.log('📇 Fetching registered users from:', endpoint);
         const response = await this.makeAuthenticatedRequest<
           RegisteredUserSummary[] |
           {
@@ -466,8 +466,8 @@ class AuthenticatedApiService {
           }
         }
       } catch (error) {
-        console.error(`❌ Error obteniendo usuarios registrados desde ${endpoint}:`, error);
-        // Intentar siguiente endpoint
+        console.error(`❌ Error fetching registered users from ${endpoint}:`, error);
+        // Try next endpoint
       }
     }
 

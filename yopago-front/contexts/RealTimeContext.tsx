@@ -64,7 +64,7 @@ const parseMessageBody = (message: IMessage): RealTimeEvent => {
     }
   } catch (error) {
     if (__DEV__) {
-      console.warn('[RealTime] No se pudo parsear el mensaje recibido', error);
+      console.warn('[RealTime] Could not parse received message', error);
     }
   }
 
@@ -106,7 +106,7 @@ export const RealTimeProvider: React.FC<RealTimeProviderProps> = ({ children }) 
         try {
           descriptor.callback(event, message);
         } catch (error) {
-          console.error('[RealTime] Error procesando callback de suscripción', error);
+          console.error('[RealTime] Error processing subscription callback', error);
         }
       },
       descriptor.headers,
@@ -121,7 +121,7 @@ export const RealTimeProvider: React.FC<RealTimeProviderProps> = ({ children }) 
         subscription.unsubscribe();
       } catch (error) {
         if (__DEV__) {
-          console.warn('[RealTime] No se pudo cancelar suscripción activa', error);
+          console.warn('[RealTime] Could not cancel active subscription', error);
         }
       }
     });
@@ -278,7 +278,7 @@ export const RealTimeProvider: React.FC<RealTimeProviderProps> = ({ children }) 
             active.subscription.unsubscribe();
           } catch (error) {
             if (__DEV__) {
-              console.warn('[RealTime] Error al cancelar suscripción', error);
+              console.warn('[RealTime] Error cancelling subscription', error);
             }
           }
           activeSubscriptions.current.delete(descriptor.id);

@@ -52,7 +52,7 @@ export const AppThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => 
           setPreferenceState('system');
         }
       } catch (error) {
-        console.warn('No se pudo cargar la preferencia de tema:', error);
+        console.warn('Could not load theme preference:', error);
       } finally {
         setIsLoading(false);
       }
@@ -75,7 +75,7 @@ export const AppThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => 
     try {
       await AsyncStorage.setItem(STORAGE_KEY, value);
     } catch (error) {
-      console.warn('No se pudo guardar la preferencia de tema:', error);
+      console.warn('Could not save theme preference:', error);
     }
   }, []);
 

@@ -4,13 +4,13 @@ import { useRouter, type Href } from 'expo-router';
 import { authService, User, LoginCredentials, RegisterCredentials, RegisterResponse } from '../services/authService';
 
 interface AuthContextType {
-  // Estado
+  // State
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 
-  // Acciones
+  // Actions
   login: (credentials: LoginCredentials) => Promise<boolean>;
   register: (credentials: RegisterCredentials) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       router.replace('/login' as Href);
     } catch (navigationError) {
-      console.error('❌ Error redirigiendo al login:', navigationError);
+      console.error('❌ Error redirecting to login:', navigationError);
     }
   }, [router]);
 
@@ -63,14 +63,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       try {
         if (isManual) {
-          console.log('🚪 Cerrando sesión...');
+          console.log('🚪 Logging out...');
         } else {
-          console.log('⌛ Sesión expirada, cerrando sesión automáticamente...');
+          console.log('⌛ Session expired, logging out automatically...');
         }
 
         await authService.logout();
       } catch (err: any) {
-        console.error('❌ Error cerrando sesión:', err);
+        console.error('❌ Error logging out:', err);
 
         if (isManual) {
           setError('Error al cerrar sesión, pero se ha cerrado localmente');
@@ -120,7 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     sessionTimerRef.current = setTimeout(() => {
       performLogout('expired').catch((err) =>
-        console.error('❌ Error al manejar expiración automática:', err),
+        console.error('❌ Error handling automatic session expiration:', err),
       );
     }, delay);
   }, [clearSessionTimer, performLogout]);
@@ -130,26 +130,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
-      console.log('🔧 Inicializando autenticación...');
-      
-      // Verificar si ya hay una sesión activa
+      console.log('🔧 Initializing authentication...');
+
+      // Check if there is already an active session
       const isAuth = await authService.isAuthenticated();
       
       if (isAuth) {
         const currentUser = await authService.getUserInfo();
         setUser(currentUser);
         setIsAuthenticated(true);
-        console.log('✅ Usuario ya autenticado:', currentUser?.username);
+        console.log('✅ User already authenticated:', currentUser?.username);
         await scheduleSessionExpiryCheck();
       } else {
-        console.log('ℹ️ No hay sesión activa');
+        console.log('ℹ️ No active session');
         setUser(null);
         setIsAuthenticated(false);
         clearSessionTimer();
         navigateToLogin();
       }
     } catch (err) {
-      console.error('❌ Error inicializando autenticación:', err);
+      console.error('❌ Error initializing authentication:', err);
       setError('Error al verificar el estado de autenticación');
       setUser(null);
       setIsAuthenticated(false);
@@ -178,14 +178,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       
-      console.log('🚀 Registrando usuario:', credentials.username);
+      console.log('🚀 Registering user:', credentials.username);
       
       const result = await authService.register(credentials);
       
-      console.log('✅ Registro exitoso');
+      console.log('✅ Registration successful');
       return result;
     } catch (err) {
-      console.error('❌ Error en registro:', err);
+      console.error('❌ Registration error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error en el registro';
       setError(errorMessage);
       throw err;
@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
       
-      console.log('🚀 Iniciando proceso de login...');
+      console.log('🚀 Starting login process...');
       
       const tokens = await authService.login(credentials);
       
@@ -209,11 +209,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(currentUser);
         setIsAuthenticated(true);
         
-        console.log('✅ Login exitoso:', currentUser?.username);
+        console.log('✅ Login successful:', currentUser?.username);
 
         await scheduleSessionExpiryCheck();
         
-        // Mostrar mensaje de bienvenida
+        // Show welcome message
         Alert.alert(
           '¡Bienvenido!',
           `Hola ${currentUser?.firstName || currentUser?.username}`,
@@ -226,7 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
     } catch (err: any) {
-      console.error('❌ Error en login:', err);
+      console.error('❌ Login error:', err);
       
       let errorMessage = 'Error al iniciar sesión';
       
@@ -266,7 +266,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       
-      console.log('🔄 Refrescando autenticación...');
+      console.log('🔄 Refreshing authentication...');
       
       const isAuth = await authService.isAuthenticated();
       
@@ -284,7 +284,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
     } catch (err: any) {
-      console.error('❌ Error refrescando autenticación:', err);
+      console.error('❌ Error refreshing authentication:', err);
       setError('Error al refrescar la autenticación');
       setUser(null);
       setIsAuthenticated(false);
@@ -315,19 +315,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       return await authService.getAccessToken();
     } catch (err) {
-      console.error('❌ Error obteniendo access token:', err);
+      console.error('❌ Error getting access token:', err);
       return null;
     }
   };
 
   const contextValue: AuthContextType = {
-    // Estado
+    // State
     user,
     isAuthenticated,
     isLoading,
     error,
 
-    // Acciones
+    // Actions
     login,
     register,
     logout,

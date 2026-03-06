@@ -1,25 +1,25 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
-// Configurar WebBrowser para que termine la sesión correctamente
+// Configure WebBrowser to properly complete the session
 WebBrowser.maybeCompleteAuthSession();
 
 /**
- * Configuración de Deep Linking para OAuth
+ * Deep Linking configuration for OAuth
  */
 export const configureLinking = () => {
-  // Manejar URLs entrantes
+  // Handle incoming URLs
   const handleDeepLink = (url: string) => {
-    console.log('🔗 Deep link recibido:', url);
-    
-    // Si es una URL de auth de OAuth, WebBrowser la manejará automáticamente
+    console.log('🔗 Deep link received:', url);
+
+    // If it is an OAuth auth URL, WebBrowser will handle it automatically
     if (url.includes('auth')) {
-      console.log('🔐 URL de autenticación detectada');
-      // WebBrowser.maybeCompleteAuthSession() ya debería haber manejado esto
+      console.log('🔐 Authentication URL detected');
+      // WebBrowser.maybeCompleteAuthSession() should have already handled this
     }
   };
 
-  // Escuchar eventos de deep linking
+  // Listen for deep linking events
   const subscription = Linking.addEventListener('url', ({ url }: { url: string }) => {
     handleDeepLink(url);
   });
@@ -28,29 +28,29 @@ export const configureLinking = () => {
 };
 
 /**
- * Obtener la URL inicial si la app se abrió desde un deep link
+ * Get the initial URL if the app was opened from a deep link
  */
 export const getInitialURL = async (): Promise<string | null> => {
   try {
     const url = await Linking.getInitialURL();
     if (url) {
-      console.log('🚀 URL inicial:', url);
+      console.log('🚀 Initial URL:', url);
     }
     return url;
   } catch (error) {
-    console.error('❌ Error obteniendo URL inicial:', error);
+    console.error('❌ Error getting initial URL:', error);
     return null;
   }
 };
 
 /**
- * Verificar si se puede abrir una URL
+ * Check if a URL can be opened
  */
 export const canOpenURL = async (url: string): Promise<boolean> => {
   try {
     return await Linking.canOpenURL(url);
   } catch (error) {
-    console.error('❌ Error verificando URL:', error);
+    console.error('❌ Error checking URL:', error);
     return false;
   }
 };
