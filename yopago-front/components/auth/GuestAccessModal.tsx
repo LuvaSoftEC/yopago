@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button';
 import { Colors } from '@/constants/theme';
 import { useGuestSession } from '@/contexts/GuestSessionContext';
@@ -22,6 +23,7 @@ interface GuestAccessModalProps {
 }
 
 export function GuestAccessModal({ visible, onClose }: GuestAccessModalProps) {
+  const { t } = useTranslation();
   const { accessWithCode, loading, error, clearError } = useGuestSession();
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
@@ -57,12 +59,12 @@ export function GuestAccessModal({ visible, onClose }: GuestAccessModalProps) {
     const trimmedName = guestName.trim();
     const trimmedEmail = email.trim();
     if (!trimmedCode || !trimmedName) {
-      setLocalError('Necesitas ingresar el código del grupo y tu nombre.');
+      setLocalError(t('guest.errorMissingFields'));
       return;
     }
 
     if (!trimmedEmail) {
-      setLocalError('El correo electrónico es obligatorio. Usa el mismo que registraste la primera vez.');
+      setLocalError(t('guest.errorEmailRequired'));
       return;
     }
 
@@ -77,7 +79,7 @@ export function GuestAccessModal({ visible, onClose }: GuestAccessModalProps) {
       onClose();
       router.replace('/guest' as Href);
     } catch (submissionError: any) {
-      const message = submissionError?.message || 'No se pudo acceder con el código proporcionado.';
+      const message = submissionError?.message || t('guest.errorAccess');
       setLocalError(message);
     }
   };
@@ -99,17 +101,17 @@ export function GuestAccessModal({ visible, onClose }: GuestAccessModalProps) {
               },
             ]}
           >
-            <Text style={[styles.heading, { color: palette.text }]}>Accede con tu código</Text>
+            <Text style={[styles.heading, { color: palette.text }]}>{t('guest.title')}</Text>
             <Text style={[styles.subheading, { color: palette.textMuted }]}>
-              Ingresa el código compartido, tu nombre y el correo con el que te identificaste.
+              {t('guest.subtitle')}
             </Text>
 
             <View style={styles.field}>
-              <Text style={[styles.label, { color: palette.textMuted }]}>Código del grupo</Text>
+              <Text style={[styles.label, { color: palette.textMuted }]}>{t('guest.groupCode')}</Text>
               <TextInput
                 value={groupCode}
                 onChangeText={setGroupCode}
-                placeholder="Ej: ABCD1234"
+                placeholder={t('guest.groupCodePlaceholder')}
                 autoCapitalize="characters"
                 style={[
                   styles.input,
@@ -123,11 +125,11 @@ export function GuestAccessModal({ visible, onClose }: GuestAccessModalProps) {
             </View>
 
             <View style={styles.field}>
-              <Text style={[styles.label, { color: palette.textMuted }]}>Tu nombre</Text>
+              <Text style={[styles.label, { color: palette.textMuted }]}>{t('guest.yourName')}</Text>
               <TextInput
                 value={guestName}
                 onChangeText={setGuestName}
-                placeholder="Cómo quieres que te vean"
+                placeholder={t('guest.namePlaceholder')}
                 autoCapitalize="words"
                 style={[
                   styles.input,
@@ -141,11 +143,11 @@ export function GuestAccessModal({ visible, onClose }: GuestAccessModalProps) {
             </View>
 
             <View style={styles.field}>
-              <Text style={[styles.label, { color: palette.textMuted }]}>Correo electrónico</Text>
+              <Text style={[styles.label, { color: palette.textMuted }]}>{t('guest.emailLabel')}</Text>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="tucorreo@example.com"
+                placeholder={t('guest.emailPlaceholder')}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 style={[
@@ -168,14 +170,14 @@ export function GuestAccessModal({ visible, onClose }: GuestAccessModalProps) {
 
             <View style={styles.actions}>
               <Button
-                title="Cancelar"
+                title={t('common.cancel')}
                 variant="ghost"
                 onPress={handleClose}
                 disabled={loading}
                 style={styles.cancelButton}
               />
               <Button
-                title={loading ? 'Validando...' : 'Ingresar como invitado'}
+                title={loading ? t('guest.validating') : t('guest.enterAsGuest')}
                 onPress={handleSubmit}
                 disabled={isSubmitDisabled}
                 loading={loading}

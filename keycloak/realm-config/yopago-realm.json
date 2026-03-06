@@ -3,7 +3,7 @@
   "enabled": true,
   "displayName": "YoPago - Gestión de Gastos",
   "accessTokenLifespan": 3600,
-  "sslRequired": "none",
+  "sslRequired": "external",
   "registrationAllowed": true,
   "roles": {
     "realm": [
@@ -22,7 +22,7 @@
       "lastName": "User",
       "email": "admin@yopago.com",
       "credentials": [
-        { "type": "password", "value": "${KEYCLOAK_ADMIN_PASSWORD}", "temporary": false }
+        { "type": "password", "value": "changeme", "temporary": false }
       ],
       "realmRoles": ["admin", "user"]
     }
@@ -33,15 +33,15 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "${KEYCLOAK_CREDENTIALS_SECRET:yopago-api-secret}",
+      "secret": "changeme",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
       "redirectUris": [
-        "${YOPAGO_BACKEND_PUBLIC_URL}/*"
+        "*"
       ],
       "webOrigins": [
-        "${YOPAGO_BACKEND_PUBLIC_URL}"
+        "*"
       ],
       "fullScopeAllowed": true
     },
@@ -53,8 +53,7 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "redirectUris": [
-        "${YOPAGO_BACKEND_PUBLIC_URL}/*",
-        "${KC_HOSTNAME_URL}/*",
+        "*",
         "yopago://auth/*"
       ],
       "webOrigins": ["+"],

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: yopago-config
+  namespace: yopago
+  labels:
+    app.kubernetes.io/part-of: yopago
+# Reemplaza los placeholders con tus dominios reales:
+#   <YOUR_DOMAIN>      → dominio principal  (ej: yopago.example.com)
+#   <YOUR_AUTH_DOMAIN> → subdominio de auth (ej: auth.yopago.example.com)
+data:
+  KC_HOSTNAME: "<YOUR_AUTH_DOMAIN>"
+  KC_HOSTNAME_URL: "https://<YOUR_AUTH_DOMAIN>"
+  YOPAGO_BACKEND_PUBLIC_URL: "https://<YOUR_DOMAIN>/api"
+  APP_FRONTEND_BASE_URL: "https://<YOUR_DOMAIN>"

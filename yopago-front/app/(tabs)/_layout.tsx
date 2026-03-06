@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { TabBarBlurWrapper } from '@/components/ui/TabBarBlurWrapper';
 
 import { HapticTab } from '@/components/haptic-tab';
@@ -10,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const { isAuthenticated, isLoading } = useAuth();
   const shouldShowTabs = isAuthenticated && !isLoading;
@@ -63,16 +65,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
-          tabBarLabel: renderLabel('Inicio'),
+          title: t('tabs.home'),
+          tabBarLabel: renderLabel(t('tabs.home')),
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="my-groups"
         options={{
-          title: 'Mis Grupos',
-          tabBarLabel: renderLabel('Grupos'),
+          title: t('tabs.groups'),
+          tabBarLabel: renderLabel(t('tabs.groups')),
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="person.3.fill" color={color} />,
           headerShown: false,
         }}
@@ -81,8 +83,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="wallet"
         options={{
-          title: "Balance",
-          tabBarLabel: renderLabel('Balance'),
+          title: t('tabs.balance'),
+          tabBarLabel: renderLabel(t('tabs.balance')),
           tabBarIcon: ({ color }) => (
             <IconSymbol size={22} name="chart.pie.fill" color={color} />
           ),
@@ -92,8 +94,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Cuenta',
-          tabBarLabel: renderLabel('Cuenta'),
+          title: t('tabs.account'),
+          tabBarLabel: renderLabel(t('tabs.account')),
           tabBarIcon: ({ color }) => <IconSymbol size={22} name="person.crop.circle" color={color} />,
         }}
       />

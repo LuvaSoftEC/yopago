@@ -2,8 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: yopago-backend
+  namespace: yopago
   labels:
     app: yopago-backend
+    app.kubernetes.io/name: yopago-backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: yopago
 spec:
   replicas: 1
   selector:
@@ -13,24 +17,52 @@ spec:
     metadata:
       labels:
         app: yopago-backend
+        app.kubernetes.io/name: yopago-backend
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: yopago
     spec:
       containers:
         - name: backend
-          image: registry.digitalocean.com/yopago-registry/yopago-backend:latest
+          image: yopago-backend:local
+          imagePullPolicy: Never
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 200m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "default"
             - name: DB_URL
-              value: "jdbc:postgresql://db-postgresql-nyc3-yopago-do-user-29933578-0.j.db.ondigitalocean.com:25060/yopago?sslmode=require"
+              value: "jdbc:postgresql://bdd:5432/yopago?sslmode=disable"
             - name: DB_USER
-              value: "doadmin"
+              value: "postgres"
             - name: DB_PASS
               valueFrom:
                 secretKeyRef:
-                  name: yopago-db
-                  key: DB_PASS
+                  name: yopago-secrets
+                  key: POSTGRES_PASSWORD
             - name: DB_DRIVER
               value: "org.postgresql.Driver"
             - name: HIBERNATE_DDL
@@ -44,7 +76,10 @@ spec:
             - name: VISION_IA_SERVICE_BASE_URL
               value: "http://vision-ia:8001"
             - name: KEYCLOAK_BASE_URL
-              value: "http://keycloak:8080"
+              valueFrom:
+                configMapKeyRef:
+                  name: yopago-config
+                  key: KC_HOSTNAME_URL
             - name: KEYCLOAK_INTERNAL_URL
               value: "http://keycloak:8080"
             - name: KEYCLOAK_AUTH_SERVER_URL
@@ -52,7 +87,7 @@ spec:
             - name: KEYCLOAK_CREDENTIALS_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-client
+                  name: yopago-secrets
                   key: KEYCLOAK_CLIENT_SECRET
             - name: KEYCLOAK_ADMIN_REALM
               value: "master"
@@ -61,7 +96,7 @@ spec:
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: keycloak-admin
+                  name: yopago-secrets
                   key: KEYCLOAK_ADMIN_PASSWORD
             - name: APP_FRONTEND_BASE_URL
               value: "http://localhost"
@@ -70,12 +105,18 @@ apiVersion: v1
 kind: Service
 metadata:
   name: yopago-backend
+  namespace: yopago
   labels:
     app: yopago-backend
+    app.kubernetes.io/name: yopago-backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: yopago
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: yopago-backend
   ports:
-    - port: 8080
+    - name: http
+      port: 8080
       targetPort: 8080
+      nodePort: 30080

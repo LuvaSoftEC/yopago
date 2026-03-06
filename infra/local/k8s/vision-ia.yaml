@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopago-vision-ia
+  namespace: yopago
+  labels:
+    app: yopago-vision-ia
+    app.kubernetes.io/name: yopago-vision-ia
+    app.kubernetes.io/component: ai
+    app.kubernetes.io/part-of: yopago
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yopago-vision-ia
+  template:
+    metadata:
+      labels:
+        app: yopago-vision-ia
+        app.kubernetes.io/name: yopago-vision-ia
+        app.kubernetes.io/component: ai
+        app.kubernetes.io/part-of: yopago
+    spec:
+      containers:
+        - name: vision-ia
+          image: yopago-vision-ia:local
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8001
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: yopago-secrets
+                  key: OPENAI_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vision-ia
+  namespace: yopago
+  labels:
+    app: yopago-vision-ia
+    app.kubernetes.io/name: yopago-vision-ia
+    app.kubernetes.io/component: ai
+    app.kubernetes.io/part-of: yopago
+spec:
+  type: ClusterIP
+  selector:
+    app: yopago-vision-ia
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001

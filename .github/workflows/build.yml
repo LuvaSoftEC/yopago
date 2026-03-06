@@ -1,0 +1,117 @@
+name: 1 - Build & Push to ACR
+
+on:
+  push:
+    branches: [dev, test, main]
+    paths:
+      - 'yopago/**'
+      - 'yopago-front/**'
+      - 'keycloak/**'
+      - 'vision-ia/**'
+  workflow_dispatch:
+
+env:
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_NAME }}.azurecr.io
+
+jobs:
+
+  # ── Backend: Spring Boot ──────────────────────────────────────────────────
+  build-backend:
+    name: Backend (Spring Boot)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build JAR
+        run: |
+          cd yopago
+          ./mvnw -B -DskipTests clean package
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build & Push
+        run: |
+          IMAGE="${{ env.ACR_LOGIN_SERVER }}/yopago-backend:latest"
+          docker build -f yopago/Dockerfile -t "$IMAGE" yopago
+          docker push "$IMAGE"
+
+  # ── Frontend: Expo / React Native Web ────────────────────────────────────
+  build-frontend:
+    name: Frontend (Expo Web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build & Push
+        run: |
+          IMAGE="${{ env.ACR_LOGIN_SERVER }}/yopago-frontend:latest"
+          docker build \
+            --build-arg EXPO_PUBLIC_BASE_URL=${{ secrets.EXPO_PUBLIC_BASE_URL }} \
+            --build-arg EXPO_PUBLIC_ISSUER=${{ secrets.EXPO_PUBLIC_ISSUER }} \
+            -f yopago-front/Dockerfile \
+            -t "$IMAGE" \
+            yopago-front
+          docker push "$IMAGE"
+
+  # ── Keycloak: realm personalizado ─────────────────────────────────────────
+  build-keycloak:
+    name: Keycloak (custom realm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build & Push
+        run: |
+          IMAGE="${{ env.ACR_LOGIN_SERVER }}/yopago-keycloak:latest"
+          docker build -f keycloak/Dockerfile -t "$IMAGE" keycloak
+          docker push "$IMAGE"
+
+  # ── Vision IA: FastAPI + OpenAI ───────────────────────────────────────────
+  build-vision-ia:
+    name: Vision IA (FastAPI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build & Push
+        run: |
+          IMAGE="${{ env.ACR_LOGIN_SERVER }}/yopago-vision-ia:latest"
+          docker build -f vision-ia/Dockerfile -t "$IMAGE" vision-ia
+          docker push "$IMAGE"

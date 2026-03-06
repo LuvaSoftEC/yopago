@@ -4,6 +4,6 @@ metadata:
   name: yopago-config
   namespace: yopago
 data:
-  KC_HOSTNAME: "localhost"
+  KC_HOSTNAME: "localhost:8082"
   KC_HOSTNAME_URL: "http://localhost:8082"
   YOPAGO_BACKEND_PUBLIC_URL: "http://localhost:8080/api"
