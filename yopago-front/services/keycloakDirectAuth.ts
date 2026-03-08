@@ -28,7 +28,7 @@ class KeycloakDirectAuth {
    */
   async directLogin(credentials: DirectLoginCredentials): Promise<DirectLoginResponse | null> {
     try {
-      console.log('🔐 Iniciando login directo con Keycloak...');
+      console.log('🔐 Starting direct login with Keycloak...');
       
       // Endpoint de token de Keycloak
       const tokenEndpoint = `${KEYCLOAK_CONFIG.ISSUER}/protocol/openid-connect/token`;
@@ -63,11 +63,11 @@ class KeycloakDirectAuth {
       const userInfo = await this.getUserInfo(tokenData.access_token);
       await this.storeUserInfo(userInfo);
       
-      console.log('✅ Login directo exitoso');
+      console.log('✅ Direct login successful');
       return tokenData;
       
     } catch (error) {
-      console.error('❌ Error en login directo:', error);
+      console.error('❌ Error in direct login:', error);
       throw error;
     }
   }
@@ -86,12 +86,12 @@ class KeycloakDirectAuth {
       });
 
       if (!response.ok) {
-        throw new Error('Error obteniendo información del usuario');
+        throw new Error('Error fetching user information');
       }
 
       return await response.json();
     } catch (error) {
-      console.error('❌ Error obteniendo información del usuario:', error);
+      console.error('❌ Error getting user information:', error);
       throw error;
     }
   }
@@ -109,9 +109,9 @@ class KeycloakDirectAuth {
         AsyncStorage.setItem(this.STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()),
       ]);
       
-      console.log('💾 Tokens almacenados correctamente');
+      console.log('💾 Tokens stored successfully');
     } catch (error) {
-      console.error('❌ Error almacenando tokens:', error);
+      console.error('❌ Error storing tokens:', error);
       throw error;
     }
   }
@@ -123,7 +123,7 @@ class KeycloakDirectAuth {
     try {
       await AsyncStorage.setItem(this.STORAGE_KEYS.USER_INFO, JSON.stringify(userInfo));
     } catch (error) {
-      console.error('❌ Error almacenando información del usuario:', error);
+      console.error('❌ Error storing user information:', error);
       throw error;
     }
   }
@@ -144,13 +144,13 @@ class KeycloakDirectAuth {
       const expiry = parseInt(expiryTime, 10);
       
       if (now >= expiry) {
-        console.log('🔄 Token expirado, intentando renovar...');
+        console.log('🔄 Token expired, attempting to refresh...');
         return await this.refreshToken();
       }
 
       return true;
     } catch (error) {
-      console.error('❌ Error verificando autenticación:', error);
+      console.error('❌ Error verifying authentication:', error);
       return false;
     }
   }
@@ -191,10 +191,10 @@ class KeycloakDirectAuth {
       const tokenData: DirectLoginResponse = await response.json();
       await this.storeTokens(tokenData);
       
-      console.log('✅ Token renovado exitosamente');
+      console.log('✅ Token refreshed successfully');
       return true;
     } catch (error) {
-      console.error('❌ Error renovando token:', error);
+      console.error('❌ Error refreshing token:', error);
       await this.logout();
       return false;
     }
@@ -212,7 +212,7 @@ class KeycloakDirectAuth {
       
       return await AsyncStorage.getItem(this.STORAGE_KEYS.ACCESS_TOKEN);
     } catch (error) {
-      console.error('❌ Error obteniendo access token:', error);
+      console.error('❌ Error getting access token:', error);
       return null;
     }
   }
@@ -230,7 +230,7 @@ class KeycloakDirectAuth {
       const userInfo = await AsyncStorage.getItem(this.STORAGE_KEYS.USER_INFO);
       return userInfo ? JSON.parse(userInfo) : null;
     } catch (error) {
-      console.error('❌ Error obteniendo usuario actual:', error);
+      console.error('❌ Error getting current user:', error);
       return null;
     }
   }
@@ -247,9 +247,9 @@ class KeycloakDirectAuth {
         AsyncStorage.removeItem(this.STORAGE_KEYS.TOKEN_EXPIRY),
       ]);
       
-      console.log('✅ Sesión cerrada correctamente');
+      console.log('✅ Session closed successfully');
     } catch (error) {
-      console.error('❌ Error cerrando sesión:', error);
+      console.error('❌ Error closing session:', error);
       throw error;
     }
   }

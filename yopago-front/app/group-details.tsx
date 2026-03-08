@@ -2159,7 +2159,7 @@ export default function GroupDetailsScreen() {
 
           const payerId = modalRecipientId;
           if (!payerId) {
-            throw new Error('No se encontró el destinatario del pago');
+            throw new Error('Payment recipient not found');
           }
 
           const memoValue = note.trim();

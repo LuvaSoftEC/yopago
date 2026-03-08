@@ -155,7 +155,7 @@ class AuthenticatedApiService {
       const accessToken = await authService.getAccessToken();
       
       if (!accessToken) {
-        throw new Error('No se pudo obtener el token de acceso. Por favor inicia sesión nuevamente.');
+        throw new Error('Could not obtain access token. Please log in again.');
       }
 
       const defaultHeaders = {
@@ -208,8 +208,8 @@ class AuthenticatedApiService {
             return await retryResponse.json();
           }
         } catch (refreshError) {
-          console.error('❌ Error refrescando token:', refreshError);
-          throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
+          console.error('❌ Error refreshing token:', refreshError);
+          throw new Error('Session expired. Please log in again.');
         }
       }
 
@@ -224,7 +224,7 @@ class AuthenticatedApiService {
     } catch (error) {
       console.error(`Authenticated API Error for ${endpoint}:`, error);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('La solicitud ha excedido el tiempo límite');
+        throw new Error('Request timed out');
       }
       throw error;
     }
@@ -234,7 +234,7 @@ class AuthenticatedApiService {
   private async ensureAuthenticated(): Promise<void> {
     const isAuth = await authService.isAuthenticated();
     if (!isAuth) {
-      throw new Error('Usuario no autenticado. Por favor inicia sesión.');
+      throw new Error('User not authenticated. Please log in.');
     }
   }
 
@@ -478,7 +478,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
 
     try {
-      console.log('🗑️ Eliminando miembro del grupo:', { groupId, memberId });
+      console.log('🗑️ Removing member from group:', { groupId, memberId });
 
       const response = await this.makeAuthenticatedRequest<RemoveMemberResponse>(
         `/groups/${groupId}/members/${memberId}`,
@@ -487,30 +487,30 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Miembro eliminado exitosamente:', response);
+      console.log('✅ Member removed successfully:', response);
       return response;
     } catch (error) {
       console.error('❌ Error removing member from group:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error al eliminar miembro del grupo');
+      throw new Error(error instanceof Error ? error.message : 'Error removing member from group');
     }
   }
 
-  // === MÉTODOS DE GASTOS ===
+  // === EXPENSE METHODS ===
 
   async getGroupExpenses(groupId: string): Promise<ExpenseResponse[]> {
     await this.ensureAuthenticated();
     
     try {
-      console.log('💰 Obteniendo gastos del grupo:', groupId);
+      console.log('💰 Fetching group expenses:', groupId);
       
       const response = await this.makeAuthenticatedRequest<ExpenseResponse[]>(
         `/expenses/group/${groupId}`
       );
-      console.log('✅ Gastos obtenidos:', response);
+      console.log('✅ Expenses fetched:', response);
       return response || [];
     } catch (error) {
       console.error('❌ Error fetching group expenses:', error);
-      throw new Error('No se pudieron cargar los gastos del grupo');
+      throw new Error('Could not load group expenses');
     }
   }
 
@@ -518,7 +518,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('💰 Creando gasto:', expense);
+      console.log('💰 Creating expense:', expense);
       
       const response = await this.makeAuthenticatedRequest<ExpenseResponse>(
         '/expenses',
@@ -528,11 +528,11 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Gasto creado:', response);
+      console.log('✅ Expense created:', response);
       return response;
     } catch (error) {
       console.error('❌ Error creating expense:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error al crear el gasto');
+      throw new Error(error instanceof Error ? error.message : 'Error creating expense');
     }
   }
 
@@ -540,7 +540,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('✏️ Actualizando gasto:', expenseId, expense);
+      console.log('✏️ Updating expense:', expenseId, expense);
       
       const response = await this.makeAuthenticatedRequest<ExpenseResponse>(
         `/expenses/${expenseId}`,
@@ -550,11 +550,11 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Gasto actualizado:', response);
+      console.log('✅ Expense updated:', response);
       return response;
     } catch (error) {
       console.error('❌ Error updating expense:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error al actualizar el gasto');
+      throw new Error(error instanceof Error ? error.message : 'Error updating expense');
     }
   }
 
@@ -562,7 +562,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('🗑️ Eliminando gasto:', expenseId);
+      console.log('🗑️ Deleting expense:', expenseId);
       
       await this.makeAuthenticatedRequest<void>(
         `/expenses/${expenseId}`,
@@ -571,29 +571,29 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Gasto eliminado exitosamente');
+      console.log('✅ Expense deleted successfully');
     } catch (error) {
       console.error('❌ Error deleting expense:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error al eliminar el gasto');
+      throw new Error(error instanceof Error ? error.message : 'Error deleting expense');
     }
   }
 
-  // === MÉTODOS DE PAGOS ===
+  // === PAYMENT METHODS ===
 
   async getGroupPayments(groupId: string): Promise<PaymentResponse[]> {
     await this.ensureAuthenticated();
     
     try {
-      console.log('💳 Obteniendo pagos del grupo:', groupId);
+      console.log('💳 Fetching group payments:', groupId);
       
       const response = await this.makeAuthenticatedRequest<PaymentResponse[]>(
         `/payments/group/${groupId}`
       );
-      console.log('✅ Pagos obtenidos:', response);
+      console.log('✅ Payments fetched:', response);
       return response || [];
     } catch (error) {
       console.error('❌ Error fetching group payments:', error);
-      throw new Error('No se pudieron cargar los pagos del grupo');
+      throw new Error('Could not load group payments');
     }
   }
 
@@ -601,7 +601,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('💳 Creando pago:', payment);
+      console.log('💳 Creating payment:', payment);
       
       const response = await this.makeAuthenticatedRequest<PaymentResponse>(
         '/payments/register',
@@ -611,11 +611,11 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Pago creado:', response);
+      console.log('✅ Payment created:', response);
       return response;
     } catch (error) {
       console.error('❌ Error creating payment:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error al crear el pago');
+      throw new Error(error instanceof Error ? error.message : 'Error creating payment');
     }
   }
 
@@ -623,7 +623,7 @@ class AuthenticatedApiService {
     await this.ensureAuthenticated();
     
     try {
-      console.log('✅ Confirmando pago:', paymentId, 'por miembro:', memberId);
+      console.log('✅ Confirming payment:', paymentId, 'by member:', memberId);
       
       const response = await this.makeAuthenticatedRequest<PaymentResponse>(
         `/payments/${paymentId}/confirm`,
@@ -633,15 +633,15 @@ class AuthenticatedApiService {
         }
       );
 
-      console.log('✅ Pago confirmado:', response);
+      console.log('✅ Payment confirmed:', response);
       return response;
     } catch (error) {
       console.error('❌ Error confirming payment:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error al confirmar el pago');
+      throw new Error(error instanceof Error ? error.message : 'Error confirming payment');
     }
   }
 
-  // === MÉTODOS DE UTILIDAD ===
+  // === UTILITY METHODS ===
 
   async getCurrentUserInfo(): Promise<any> {
     await this.ensureAuthenticated();
@@ -650,7 +650,7 @@ class AuthenticatedApiService {
       return await authService.getUserInfo();
     } catch (error) {
       console.error('❌ Error getting current user info:', error);
-      throw new Error('No se pudo obtener la información del usuario');
+      throw new Error('Could not retrieve user information');
     }
   }
 
@@ -662,7 +662,7 @@ class AuthenticatedApiService {
       const memberId = typeof response?.member_id === 'number' ? response.member_id : Number(response?.member_id);
 
       if (!Number.isFinite(memberId)) {
-        throw new Error('No se pudo determinar el identificador del miembro actual');
+        throw new Error('Could not determine the current member identifier');
       }
 
       return {
@@ -677,7 +677,7 @@ class AuthenticatedApiService {
       };
     } catch (error) {
       console.error('❌ Error getting current member info:', error);
-      throw new Error(error instanceof Error ? error.message : 'No se pudo obtener el miembro autenticado');
+      throw new Error(error instanceof Error ? error.message : 'Could not retrieve the authenticated member');
     }
   }
 
@@ -725,11 +725,11 @@ class AuthenticatedApiService {
       return response;
     } catch (error) {
       console.error('Error processing receipt:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error al procesar la factura');
+      throw new Error(error instanceof Error ? error.message : 'Error processing receipt');
     }
   }
 
-  // Métodos privados
+  // Private methods
   private generateGroupCode(): string {
     return Math.random().toString(36).substring(2, 10).toUpperCase();
   }
@@ -737,7 +737,7 @@ class AuthenticatedApiService {
   private async convertFileToBase64(fileUri: string): Promise<string> {
     try {
       if (!fileUri) {
-        throw new Error('URI de archivo inválida');
+        throw new Error('Invalid file URI');
       }
 
       if (fileUri.startsWith('data:')) {
@@ -770,7 +770,7 @@ class AuthenticatedApiService {
       });
     } catch (error) {
       console.error('Error converting file to base64:', error);
-      throw new Error('No se pudo procesar el archivo adjunto');
+      throw new Error('Could not process the attached file');
     }
   }
 
@@ -788,10 +788,10 @@ class AuthenticatedApiService {
 
 }
 
-// Instancia singleton del servicio autenticado
+// Singleton instance of the authenticated service
 export const authenticatedApiService = new AuthenticatedApiService();
 
-// Hook para usar en React
+// Hook for use in React
 export const useAuthenticatedApiService = () => {
   return authenticatedApiService;
 };

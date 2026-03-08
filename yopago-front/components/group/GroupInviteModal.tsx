@@ -56,7 +56,7 @@ export default function GroupInviteModal({
       await Clipboard.setStringAsync(groupData.code);
       Alert.alert('Copiado', 'Código copiado al portapapeles');
     } catch (error) {
-      console.error('Error copiando código:', error);
+      console.error('Error copying code:', error);
       Alert.alert('Error', 'No se pudo copiar el código');
     }
   };
@@ -113,7 +113,7 @@ export default function GroupInviteModal({
           url: webLink ?? deepLink,
         });
       } catch (shareError) {
-        console.error('Error usando el menú de compartir:', shareError);
+        console.error('Error using share menu:', shareError);
         Alert.alert('No se pudo compartir', 'Intenta nuevamente más tarde o copia el código manualmente.');
       }
     }

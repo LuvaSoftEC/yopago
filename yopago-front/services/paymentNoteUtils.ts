@@ -77,7 +77,7 @@ export const parsePaymentNoteMetadata = (raw?: string | null): PaymentNoteMetada
       return normalizeMetadata(parsed as PaymentNoteMetadata);
     }
   } catch (error) {
-    console.warn('[paymentNoteUtils] No se pudo parsear metadata del pago', error);
+    console.warn('[paymentNoteUtils] Could not parse payment metadata', error);
   }
 
   return null;

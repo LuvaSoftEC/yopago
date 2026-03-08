@@ -106,7 +106,7 @@ function MisGruposContent() {
 						typeof rawGroupId === 'number' ? rawGroupId : Number(rawGroupId);
 
 					if (!Number.isFinite(numericGroupId)) {
-						console.warn('⚠️ Omitiendo grupo sin identificador válido:', group);
+						console.warn('⚠️ Skipping group without valid identifier:', group);
 						return acc;
 					}
 
@@ -275,29 +275,29 @@ function MisGruposContent() {
 		};
 	}, [currentMemberId, scheduleReload, subscribeToUserEvents]);
 
-	// Suscribirse a eventos de cada grupo (gastos, pagos, miembros)
+	// Subscribe to events for each group (expenses, payments, members)
 	useEffect(() => {
-		console.log('🔍 [MyGroups] useEffect de suscripción ejecutado, grupos:', groups.length);
-		
+		console.log('🔍 [MyGroups] subscription useEffect executed, groups:', groups.length);
+
 		if (!groups.length) {
-			console.log('⚠️ [MyGroups] No hay grupos para suscribirse');
+			console.log('⚠️ [MyGroups] No groups to subscribe to');
 			return undefined;
 		}
 
-		console.log(`📡 [MyGroups] Suscribiéndose a ${groups.length} grupos:`, groups.map(g => g.groupId));
+		console.log(`📡 [MyGroups] Subscribing to ${groups.length} groups:`, groups.map(g => g.groupId));
 		const unsubscribers: (() => void)[] = [];
 
 		groups.forEach((group) => {
-			console.log(`🔌 [MyGroups] Suscribiéndose al grupo ${group.groupId} (${group.name})`);
+			console.log(`🔌 [MyGroups] Subscribing to group ${group.groupId} (${group.name})`);
 			const unsubscribe = subscribeToGroupEvents(group.groupId, (event) => {
-				console.log(`📨 [MyGroups] Evento recibido del grupo ${group.groupId}:`, event);
-				
+				console.log(`📨 [MyGroups] Event received from group ${group.groupId}:`, event);
+
 				if (!event || typeof event.type !== 'string') {
-					console.warn(`⚠️ [MyGroups] Evento sin tipo del grupo ${group.groupId}:`, event);
+					console.warn(`⚠️ [MyGroups] Event without type from group ${group.groupId}:`, event);
 					return;
 				}
 
-				// Actualizar cuando hay cambios en gastos, pagos o miembros
+				// Update when there are changes in expenses, payments or members
 				if (
 					event.type === 'group.expense.created' ||
 					event.type === 'group.expense.updated' ||
@@ -307,10 +307,10 @@ function MisGruposContent() {
 					event.type === 'group.member.added' ||
 					event.type === 'group.member.removed'
 				) {
-					console.log(`✅ [MyGroups] Evento válido en grupo ${group.groupId} (${group.name}):`, event.type);
+					console.log(`✅ [MyGroups] Valid event in group ${group.groupId} (${group.name}):`, event.type);
 					scheduleReload();
 				} else {
-					console.log(`ℹ️ [MyGroups] Evento ignorado del grupo ${group.groupId}:`, event.type);
+					console.log(`ℹ️ [MyGroups] Ignored event from group ${group.groupId}:`, event.type);
 				}
 			});
 
@@ -320,7 +320,7 @@ function MisGruposContent() {
 		});
 
 		return () => {
-			console.log(`🔌 [MyGroups] Desuscribiéndose de ${unsubscribers.length} grupos`);
+			console.log(`🔌 [MyGroups] Unsubscribing from ${unsubscribers.length} groups`);
 			unsubscribers.forEach((unsub) => {
 				if (typeof unsub === 'function') {
 					unsub();
@@ -390,7 +390,7 @@ function MisGruposContent() {
 				const numericGroupId = Number(groupId);
 
 				if (!Number.isFinite(numericGroupId)) {
-					console.warn('⚠️ ID de grupo inválido, no se puede eliminar:', groupId);
+					console.warn('⚠️ Invalid group ID, cannot delete:', groupId);
 				setDeleteError(t('groups.deleteIdentifyError'));
 				return false;
 				}

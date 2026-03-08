@@ -62,7 +62,7 @@ export default function CreateGroupForm() {
         description: formData.description.trim() || undefined,
       };
 
-      console.log('🔄 Enviando solicitud de creación de grupo:', groupRequest);
+      console.log('🔄 Sending group creation request:', groupRequest);
       
       const response = await authenticatedApiService.createGroup(groupRequest);
       

@@ -158,7 +158,7 @@ class AuthService {
       // Decode the JWT (the payload part is base64 encoded)
       const tokenParts = accessToken.split('.');
       if (tokenParts.length !== 3) {
-        throw new Error('Token JWT inválido');
+        throw new Error('Invalid JWT token');
       }
 
       const payload = JSON.parse(atob(tokenParts[1]));
@@ -265,7 +265,7 @@ class AuthService {
       }
       return JSON.parse(userInfoStr);
     } catch (error) {
-      console.error('❌ Error obteniendo info del usuario:', error);
+      console.error('❌ Error getting user info:', error);
       return null;
     }
   }
@@ -278,7 +278,7 @@ class AuthService {
       const userInfo = await this.getUserInfo();
       return userInfo?.roles.includes(role) || false;
     } catch (error) {
-      console.error('❌ Error verificando rol:', error);
+      console.error('❌ Error verifying role:', error);
       return false;
     }
   }
@@ -288,7 +288,7 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      console.log('👋 Cerrando sesión...');
+      console.log('👋 Logging out...');
       
       // Limpiar AsyncStorage
       await Promise.all([
@@ -298,9 +298,9 @@ class AuthService {
         AsyncStorage.removeItem(this.STORAGE_KEYS.TOKEN_EXPIRY),
       ]);
 
-      console.log('✅ Sesión cerrada exitosamente');
+      console.log('✅ Session closed successfully');
     } catch (error) {
-      console.error('❌ Error cerrando sesión:', error);
+      console.error('❌ Error logging out:', error);
       throw error;
     }
   }
@@ -317,10 +317,10 @@ class AuthService {
 
       // Aquí puedes implementar el endpoint de refresh si tu API lo tiene
       // Por ahora, retornamos false para forzar re-login
-      console.log('⚠️ Refresh token no implementado, se requiere re-login');
+      console.log('⚠️ Refresh token not implemented, re-login required');
       return false;
     } catch (error) {
-      console.error('❌ Error refrescando token:', error);
+      console.error('❌ Error refreshing token:', error);
       return false;
     }
   }
@@ -335,7 +335,7 @@ class AuthService {
       const expiryTime = parseInt(expiryTimeStr, 10);
       return Number.isNaN(expiryTime) ? null : expiryTime;
     } catch (error) {
-      console.error('❌ Error obteniendo expiración del token:', error);
+      console.error('❌ Error getting token expiry:', error);
       return null;
     }
   }
@@ -378,7 +378,7 @@ class AuthService {
       const refreshed = await this.refreshToken();
       if (!refreshed) {
         await this.logout();
-        throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+        throw new Error('Session expired. Please log in again.');
       }
       
       // Reintentar con el nuevo token

@@ -30,7 +30,7 @@ const withDefaults = (init: RequestInit = {}): RequestInit => ({
 
 const convertFileToBase64 = async (fileUri: string): Promise<string> => {
   if (!fileUri) {
-    throw new Error('URI de archivo inválida');
+    throw new Error('Invalid file URI');
   }
 
   if (fileUri.startsWith('data:')) {
@@ -125,7 +125,7 @@ export const guestService = {
     } = {},
   ): Promise<ProcessReceiptResponse> => {
     if (typeof groupId !== 'number' || Number.isNaN(groupId)) {
-      throw new Error('Grupo no válido para procesar el recibo.');
+      throw new Error('Invalid group for processing the receipt.');
     }
 
     const fileBase64 = await convertFileToBase64(fileUri);
