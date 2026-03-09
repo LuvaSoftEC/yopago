@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useColorScheme } from '../../hooks/use-color-scheme';
 import { Colors } from '../../constants/theme';
 
@@ -72,12 +73,13 @@ import { Colors } from '../../constants/theme';
     onRequestPayment,
     paymentState,
   }) => {
+    const { t } = useTranslation();
     const scheme = useColorScheme() ?? 'light';
     const palette = Colors[scheme];
     const styles = useMemo(() => createStyles(palette), [palette]);
     if (!expense) return null;
 
-    const payerName = expense.payer?.name || expense.paidBy?.name || 'Miembro desconocido';
+    const payerName = expense.payer?.name || expense.paidBy?.name || t('groups.unknownMember');
     const expenseDate = expense.date || expense.createdAt;
     const userShare = paymentState?.userShare ?? expense.shares?.find(share => share.memberId === currentMemberId);
     const expensePayerId = expense.payer?.id ?? expense.paidBy?.id;
@@ -98,13 +100,13 @@ import { Colors } from '../../constants/theme';
       if (!item.shares || item.shares.length === 0) {
         return (
           <Text style={styles.emptySharesText}>
-            Este item se dividió equitativamente entre todos los participantes del gasto.
+            {t('groups.expenseDetailEquiTable')}
           </Text>
         );
       }
       return item.shares.map(share => (
         <View key={`${item.id}-${share.id ?? share.memberId}`} style={styles.shareRow}>
-          <Text style={styles.shareName}>{share.memberName || 'Miembro'}</Text>
+          <Text style={styles.shareName}>{share.memberName || t('groups.memberFallback')}</Text>
           <View style={styles.shareAmounts}>
             {typeof share.amount === 'number' && (
               <Text style={styles.shareAmount}>{formatCurrency(share.amount)}</Text>
@@ -121,13 +123,13 @@ import { Colors } from '../../constants/theme';
       if (!shares || shares.length === 0) {
         return (
           <Text style={styles.emptySharesText}>
-            No hay información de participación disponible para este gasto.
+            {t('groups.expenseDetailNoInfo')}
           </Text>
         );
       }
       return shares.map(share => (
         <View key={share.id ?? share.memberId} style={styles.shareRow}>
-          <Text style={styles.shareName}>{share.memberName || 'Miembro'}</Text>
+          <Text style={styles.shareName}>{share.memberName || t('groups.memberFallback')}</Text>
           <View style={styles.shareAmounts}>
             {typeof share.amount === 'number' && (
               <Text style={styles.shareAmount}>{formatCurrency(share.amount)}</Text>
@@ -150,50 +152,50 @@ import { Colors } from '../../constants/theme';
         <View style={styles.backdrop}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{expense.description || expense.note || 'Detalle del gasto'}</Text>
+              <Text style={styles.modalTitle}>{expense.description || expense.note || t('groups.expenseDetailTitle')}</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <Ionicons name="close" size={22} color="#1f2937" />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.modalContent}>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>Monto total</Text>
+                <Text style={styles.summaryLabel}>{t('groups.expenseDetailTotalAmount')}</Text>
                 <Text style={styles.summaryAmount}>{formatCurrency(expense.amount)}</Text>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Pagado por</Text>
+                  <Text style={styles.summaryLabel}>{t('groups.expenseDetailPaidBy')}</Text>
                   <Text style={styles.summaryValue}>{payerName}</Text>
                 </View>
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Fecha</Text>
+                  <Text style={styles.summaryLabel}>{t('groups.expenseDetailDate')}</Text>
                   <Text style={styles.summaryValue}>{formatDate(expenseDate)}</Text>
                 </View>
                 {expense.tag && (
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Categoría</Text>
+                    <Text style={styles.summaryLabel}>{t('groups.expenseDetailCategory')}</Text>
                     <Text style={styles.summaryValue}>{expense.tag}</Text>
                   </View>
                 )}
               </View>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Participaciones</Text>
+                <Text style={styles.sectionTitle}>{t('groups.expenseDetailShares')}</Text>
                 {renderOverallShares(expense.shares)}
                 {isPayer && shareStatuses.length > 0 && (
                   <View style={styles.shareStatusesContainer}>
-                    <Text style={styles.shareStatusesHeader}>Estado de pagos</Text>
+                    <Text style={styles.shareStatusesHeader}>{t('groups.expenseDetailPayStatus')}</Text>
                     {shareStatuses.map((status) => {
-                      const memberLabel = status.memberName || (typeof status.memberId === 'number' ? `Miembro #${status.memberId}` : 'Miembro');
+                      const memberLabel = status.memberName || (typeof status.memberId === 'number' ? t('groups.memberDeepLink', { id: status.memberId }) : t('groups.memberFallback'));
                       const amountLabel = formatCurrency(status.amount);
                       let iconName: 'alert-circle' | 'time' | 'checkmark-circle' = 'alert-circle';
                       let accentColor = '#dc2626';
-                      let detailText = `Falta pagar ${amountLabel}`;
+                      let detailText = t('groups.expenseDetailUnpaid', { amount: amountLabel });
                       if (status.status === 'pending') {
                         iconName = 'time';
                         accentColor = '#d97706';
-                        detailText = `Pago en revisión por ${amountLabel}`;
+                        detailText = t('groups.expenseDetailPending', { amount: amountLabel });
                       } else if (status.status === 'confirmed') {
                         iconName = 'checkmark-circle';
                         accentColor = '#15803d';
-                        detailText = `Pago confirmado de ${amountLabel}`;
+                        detailText = t('groups.expenseDetailConfirmedAmt', { amount: amountLabel });
                       }
                       return (
                         <View key={`${status.memberId ?? memberLabel}-${status.status}`} style={styles.shareStatusRow}>
@@ -211,7 +213,7 @@ import { Colors } from '../../constants/theme';
                   <TouchableOpacity style={styles.paymentButton} onPress={() => onRequestPayment?.(expense, userShare!)}>
                     <Ionicons name="wallet" size={18} color="#fff" style={styles.paymentButtonIcon} />
                     <Text style={styles.paymentButtonText}>
-                      Registrar pago de {formatCurrency(userShare!.amount ?? 0)}
+                      {t('groups.payAction', { amount: formatCurrency(userShare!.amount ?? 0) })}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -219,9 +221,9 @@ import { Colors } from '../../constants/theme';
                   <View style={[styles.paymentStatusBanner, styles.paymentStatusPending]}>
                     <Ionicons name="time" size={18} color="#d97706" />
                     <View style={styles.paymentStatusContent}>
-                      <Text style={styles.paymentStatusTitle}>Pago en revisión</Text>
+                      <Text style={styles.paymentStatusTitle}>{t('groups.expenseDetailPendingBadge')}</Text>
                       <Text style={styles.paymentStatusSubtitle}>
-                        {pendingDisplayNote ?? `Pago de ${formatCurrency(pendingPayment.amount)} pendiente de confirmación.`}
+                        {pendingDisplayNote ?? t('groups.expenseDetailPendingMsg', { amount: formatCurrency(pendingPayment.amount) })}
                       </Text>
                     </View>
                   </View>
@@ -230,9 +232,9 @@ import { Colors } from '../../constants/theme';
                   <View style={[styles.paymentStatusBanner, styles.paymentStatusConfirmed]}>
                     <Ionicons name="checkmark-circle" size={18} color="#15803d" />
                     <View style={styles.paymentStatusContent}>
-                      <Text style={styles.paymentStatusTitle}>Pago confirmado</Text>
+                      <Text style={styles.paymentStatusTitle}>{t('groups.expenseDetailConfirmedBadge')}</Text>
                       <Text style={styles.paymentStatusSubtitle}>
-                        {confirmedDisplayNote ?? `Se registró un pago de ${formatCurrency(confirmedPayment.amount)}.`}
+                        {confirmedDisplayNote ?? t('groups.expenseDetailConfirmedMsg', { amount: formatCurrency(confirmedPayment.amount) })}
                       </Text>
                     </View>
                   </View>
@@ -241,25 +243,25 @@ import { Colors } from '../../constants/theme';
                   <View style={[styles.paymentStatusBanner, styles.paymentStatusSettled]}>
                     <Ionicons name="checkmark" size={18} color="#1d4ed8" />
                     <View style={styles.paymentStatusContent}>
-                      <Text style={styles.paymentStatusTitle}>Saldo al día</Text>
+                      <Text style={styles.paymentStatusTitle}>{t('groups.expenseDetailSettled')}</Text>
                       <Text style={styles.paymentStatusSubtitle}>
-                        Ya no necesitas registrar pagos para este gasto.
+                        {t('groups.expenseDetailSettledMsg')}
                       </Text>
                     </View>
                   </View>
                 )}
               </View>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Items</Text>
+                <Text style={styles.sectionTitle}>{t('groups.expenseDetailItems')}</Text>
                 {expense.items && expense.items.length > 0 ? (
                   expense.items.map(item => (
                     <View key={item.id} style={styles.itemCard}>
                       <View style={styles.itemHeader}>
-                        <Text style={styles.itemTitle}>{item.description || 'Item sin descripción'}</Text>
+                        <Text style={styles.itemTitle}>{item.description || t('groups.expenseDetailItemNoDesc')}</Text>
                         <Text style={styles.itemAmount}>{formatCurrency(item.amount)}</Text>
                       </View>
                       {item.quantity ? (
-                        <Text style={styles.itemMeta}>Cantidad: {item.quantity}</Text>
+                        <Text style={styles.itemMeta}>{t('groups.expenseDetailItemQty', { qty: item.quantity })}</Text>
                       ) : null}
                       <View style={styles.itemSharesContainer}>
                         {renderItemShares(item)}
@@ -268,7 +270,7 @@ import { Colors } from '../../constants/theme';
                   ))
                 ) : (
                   <Text style={styles.emptySharesText}>
-                    Este gasto no tiene items detallados.
+                    {t('groups.expenseDetailNoItems')}
                   </Text>
                 )}
               </View>

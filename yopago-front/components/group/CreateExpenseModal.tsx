@@ -1,5 +1,8 @@
 import { Colors, type AppPalette } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useGroupTypesMap } from '@/hooks/use-group-types';
+import { useTranslation } from 'react-i18next';
+import { PROPERTY_CATEGORIES } from '@/constants/propertyCategories';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -7,6 +10,7 @@ import {
     Image,
   Linking,
     Modal,
+    Pressable,
     ScrollView,
     StyleSheet,
     Switch,
@@ -98,6 +102,9 @@ export function CreateExpenseModal({
 
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const { t } = useTranslation();
+  const groupTypesMap = useGroupTypesMap([groupId]);
+  const isPropertyGroup = groupTypesMap[String(groupId)]?.id === 'propiedad';
   const styles = React.useMemo(() => createStyles(palette), [palette]);
   const placeholderColor = applyAlpha(palette.textMuted, 0.55);
   const helperTextColor = applyAlpha(palette.textMuted, 0.8);
@@ -111,9 +118,9 @@ export function CreateExpenseModal({
     }
 
     Linking.openURL(receiptPreviewUri).catch(() => {
-      Alert.alert('Error', 'No se pudo abrir el archivo adjunto.');
+      Alert.alert(t('common.error'), t('groups.expenseOpenAttachError'));
     });
-  }, [receiptPreviewUri]);
+  }, [receiptPreviewUri, t]);
 
   const allMemberIds = React.useMemo(() => groupMembers.map(member => member.id), [groupMembers]);
 
@@ -235,28 +242,28 @@ export function CreateExpenseModal({
 
     switch (field) {
       case 'note':
-        if (!trimmed) return 'Añade una descripción corta del gasto.';
-        if (trimmed.length < MIN_DESCRIPTION) return 'Usa al menos 4 caracteres para que sea claro.';
-        if (trimmed.length > MAX_DESCRIPTION) return 'Mantén la descripción debajo de 120 caracteres.';
+        if (!trimmed) return t('groups.expenseErrDesc1');
+        if (trimmed.length < MIN_DESCRIPTION) return t('groups.expenseErrDesc2');
+        if (trimmed.length > MAX_DESCRIPTION) return t('groups.expenseErrDesc3');
         return null;
       case 'tag':
-        if (!trimmed) return 'Define una categoría para clasificar el gasto.';
-        if (trimmed.length < MIN_CATEGORY) return 'La categoría debe tener mínimo 3 caracteres.';
+        if (!trimmed) return t('groups.expenseErrCat1');
+        if (trimmed.length < MIN_CATEGORY) return t('groups.expenseErrCat2');
         return null;
       case 'amount':
         if (useItems) return null;
-        if (!trimmed) return 'Ingresa el monto total del gasto.';
+        if (!trimmed) return t('groups.expenseErrAmount1');
         const normalized = trimmed.replace(',', '.');
         const parsed = parseFloat(normalized);
-        if (!Number.isFinite(parsed) || parsed <= 0) return 'El monto debe ser mayor a 0.';
-        if (parsed > MAX_AMOUNT) return 'Ese monto es demasiado grande. Intenta dividirlo.';
+        if (!Number.isFinite(parsed) || parsed <= 0) return t('groups.expenseErrAmount2');
+        if (parsed > MAX_AMOUNT) return t('groups.expenseErrAmount3');
         const decimals = normalized.split('.')[1];
-        if (decimals && decimals.length > 2) return 'Usa máximo dos decimales.';
+        if (decimals && decimals.length > 2) return t('groups.expenseErrAmount4');
         return null;
       default:
         return null;
     }
-  }, [amount, note, tag, useItems]);
+  }, [amount, note, tag, useItems, t]);
 
   const runFieldValidation = React.useCallback((field: FieldName, value?: string) => {
     const error = validateField(field, value);
@@ -288,7 +295,7 @@ export function CreateExpenseModal({
         errors.amount = amountError;
       }
     } else if (itemsTotalValue <= 0) {
-      errors.items = 'Agrega al menos un item con monto mayor a 0.';
+      errors.items = t('groups.expenseErrItems1');
     }
 
     if (!useItems && isCustomDivision) {
@@ -302,14 +309,14 @@ export function CreateExpenseModal({
       });
 
       if (!hasPositiveShare) {
-        errors.shares = 'Asigna porcentaje a al menos un miembro.';
+        errors.shares = t('groups.expenseErrPercent1');
       } else if (Math.abs(totalPercent - 100) > 0.1) {
-        errors.shares = `Los porcentajes suman ${totalPercent.toFixed(2)}%. Ajusta para llegar a 100%.`;
+        errors.shares = t('groups.expenseErrPercent2', { total: totalPercent.toFixed(2) });
       }
     }
 
     return errors;
-  }, [isCustomDivision, itemsTotalValue, memberPercentages, useItems, validateField]);
+  }, [isCustomDivision, itemsTotalValue, memberPercentages, useItems, validateField, t]);
 
   const handleNoteChange = (value: string) => {
     setNote(value);
@@ -376,12 +383,12 @@ export function CreateExpenseModal({
     const sharesOk = useItems || !isCustomDivision || (!validateForm().shares && Object.keys(memberPercentages).length > 0);
 
     return [
-      { id: 'note', label: 'Descripción clara', valid: descriptionOk },
-      { id: 'amount', label: useItems ? 'Total desde items' : 'Monto positivo', valid: amountOk },
-      { id: 'tag', label: 'Categoría definida', valid: tagOk },
-      { id: 'shares', label: 'División equilibrada', valid: sharesOk },
+      { id: 'note', label: t('groups.expenseValidDescClear'), valid: descriptionOk },
+      { id: 'amount', label: useItems ? t('groups.expenseValidTotal') : t('groups.expenseValidPositive'), valid: amountOk },
+      { id: 'tag', label: t('groups.expenseValidCategory'), valid: tagOk },
+      { id: 'shares', label: t('groups.expenseValidDivision'), valid: sharesOk },
     ];
-  }, [amount, isCustomDivision, itemsTotalValue, memberPercentages, useItems, validateField, validateForm]);
+  }, [amount, isCustomDivision, itemsTotalValue, memberPercentages, useItems, validateField, validateForm, t]);
 
   const handleAddItem = () => {
     setItems(prev => [...prev, createEmptyItem()]);
@@ -460,7 +467,7 @@ export function CreateExpenseModal({
 
       const nonZeroEntries = shareEntries.filter(entry => entry.percent > 0);
       if (nonZeroEntries.length === 0) {
-        setFieldErrors(prev => ({ ...prev, shares: 'Asigna porcentaje a al menos un miembro.' }));
+        setFieldErrors(prev => ({ ...prev, shares: t('groups.expenseErrPercent1') }));
         return;
       }
 
@@ -469,7 +476,7 @@ export function CreateExpenseModal({
 
       if (Math.abs(diff) > 1) {
         const totalPercent = (totalScaled / 100).toFixed(2);
-        setFieldErrors(prev => ({ ...prev, shares: `Los porcentajes deben sumar 100%. Actualmente suman ${totalPercent}%` }));
+        setFieldErrors(prev => ({ ...prev, shares: t('groups.expenseErrPercent2', { total: totalPercent }) }));
         return;
       }
 
@@ -496,7 +503,7 @@ export function CreateExpenseModal({
 
     if (useItems) {
       if (items.length === 0) {
-        setFieldErrors(prev => ({ ...prev, items: 'Agrega al menos un item para registrar el gasto.' }));
+        setFieldErrors(prev => ({ ...prev, items: t('groups.expenseErrItemsEmpty') }));
         return;
       }
 
@@ -510,17 +517,17 @@ export function CreateExpenseModal({
         const quantityValue = parseInt(item.quantity, 10);
 
         if (!description) {
-          itemIssue = 'Cada item necesita una descripción.';
+          itemIssue = t('groups.expenseErrItemDesc');
           break;
         }
 
         if (!Number.isFinite(amountValue) || amountValue <= 0) {
-          itemIssue = `El item "${description || 'sin nombre'}" debe tener un monto válido.`;
+          itemIssue = t('groups.expenseErrItemAmount', { name: description });
           break;
         }
 
         if (!item.selectedMembers || item.selectedMembers.length === 0) {
-          itemIssue = `Selecciona al menos un miembro para el item "${description || 'sin nombre'}".`;
+          itemIssue = t('groups.expenseErrItemPartic', { name: description });
           break;
         }
 
@@ -546,7 +553,7 @@ export function CreateExpenseModal({
       normalizedAmount = Number(computedTotal.toFixed(2));
 
       if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
-        setFieldErrors(prev => ({ ...prev, items: 'El total de los items debe ser mayor a 0.' }));
+        setFieldErrors(prev => ({ ...prev, items: t('groups.expenseErrItemsTotal') }));
         return;
       }
 
@@ -585,7 +592,7 @@ export function CreateExpenseModal({
       
       onClose();
     } catch {
-      Alert.alert('Error', 'No se pudo crear el gasto. Intenta de nuevo.');
+      Alert.alert(t('common.error'), t('groups.expenseCreateError'));
     } finally {
       setIsLoading(false);
     }
@@ -650,14 +657,14 @@ export function CreateExpenseModal({
           <TouchableOpacity onPress={onClose}>
             <Ionicons name="close" size={28} color={palette.text} />
           </TouchableOpacity>
-          <Text style={styles.title}>Nuevo Gasto</Text>
+          <Text style={styles.title}>{t('groups.expenseModalTitle')}</Text>
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={isLoading}
             style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
           >
             <Text style={styles.saveButtonText}>
-              {isLoading ? 'Creando...' : 'Crear'}
+              {isLoading ? t('groups.expenseModalCreating') : t('groups.expenseModalCreate')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -665,7 +672,7 @@ export function CreateExpenseModal({
         <ScrollView style={styles.content}>
           {/* Información básica */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Información del Gasto</Text>
+            <Text style={styles.sectionTitle}>{t('groups.expenseSectionInfo')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -693,7 +700,7 @@ export function CreateExpenseModal({
 
             {receiptPreviewUri && (receiptPreviewKind === undefined || receiptPreviewKind === 'image') ? (
               <View style={styles.previewContainer}>
-                <Text style={styles.label}>Vista previa de la factura</Text>
+                <Text style={styles.label}>{t('groups.expenseInvoicePreview')}</Text>
                 <Image
                   source={{ uri: receiptPreviewUri }}
                   style={styles.receiptPreview}
@@ -704,7 +711,7 @@ export function CreateExpenseModal({
 
             {receiptPreviewKind && receiptPreviewKind !== 'image' ? (
               <View style={styles.previewContainer}>
-                <Text style={styles.label}>Archivo adjunto</Text>
+                <Text style={styles.label}>{t('groups.expenseAttachment')}</Text>
                 <TouchableOpacity
                   style={styles.attachmentPreview}
                   activeOpacity={receiptPreviewUri ? 0.8 : 1}
@@ -720,10 +727,10 @@ export function CreateExpenseModal({
                   </View>
                   <View style={styles.attachmentInfo}>
                     <Text style={styles.attachmentName} numberOfLines={1}>
-                      {receiptPreviewName || 'Archivo adjunto'}
+                      {receiptPreviewName || t('groups.expenseAttachment')}
                     </Text>
                     <Text style={styles.attachmentHint} numberOfLines={1}>
-                      {receiptPreviewUri ? 'Toca para abrir' : 'Adjunto disponible'}
+                      {receiptPreviewUri ? t('groups.expenseAttachmentTap') : t('groups.expenseAttachmentAvailable')}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -731,23 +738,23 @@ export function CreateExpenseModal({
             ) : null}
             
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Descripción *</Text>
+              <Text style={styles.label}>{t('groups.expenseDescLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={note}
                 onChangeText={handleNoteChange}
-                placeholder="¿En qué se gastó?"
+                placeholder={t('groups.expenseDescPlaceholder')}
                 placeholderTextColor={placeholderColor}
                 onBlur={() => touchField('note')}
               />
-              <Text style={[styles.helperText, { color: helperTextColor }]}>Sé específico para que todos lo recuerden.</Text>
+              <Text style={[styles.helperText, { color: helperTextColor }]}>{t('groups.expenseDescHint')}</Text>
               {showFieldError('note') && (
                 <Text style={[styles.inlineError, { color: inlineErrorColor }]}>{getFieldError('note')}</Text>
               )}
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Monto *</Text>
+              <Text style={styles.label}>{t('groups.expenseAmountLabel')}</Text>
               <TextInput
                 style={[styles.input, useItems && styles.inputDisabled]}
                 value={amount}
@@ -760,8 +767,8 @@ export function CreateExpenseModal({
               />
               <Text style={[styles.helperText, { color: helperTextColor }]}>
                 {useItems
-                  ? 'El total se ajusta automáticamente con los items.'
-                  : 'Puedes ingresar decimales (máximo dos).'}
+                  ? t('groups.expenseAmountHintItems')
+                  : t('groups.expenseAmountHintDecimals')}
               </Text>
               {!useItems && showFieldError('amount') && (
                 <Text style={[styles.inlineError, { color: inlineErrorColor }]}>{getFieldError('amount')}</Text>
@@ -769,23 +776,58 @@ export function CreateExpenseModal({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Categoría *</Text>
-              <TextInput
-                style={styles.input}
-                value={tag}
-                onChangeText={handleTagChange}
-                placeholder="Ej: Comida, Transporte, etc."
-                placeholderTextColor={placeholderColor}
-                onBlur={() => touchField('tag')}
-              />
-              <Text style={[styles.helperText, { color: helperTextColor }]}>Agrupa gastos similares para analizarlos después.</Text>
+              <Text style={styles.label}>{t('groups.expenseCategoryLabel')}</Text>
+              {isPropertyGroup ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                  {PROPERTY_CATEGORIES.map((cat) => {
+                    const isActive = tag === cat.id;
+                    return (
+                      <Pressable
+                        key={cat.id}
+                        onPress={() => {
+                          setTag(cat.id);
+                          if (touchedFields.tag) runFieldValidation('tag', cat.id);
+                        }}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 5,
+                          paddingVertical: 6,
+                          paddingHorizontal: 11,
+                          borderRadius: 20,
+                          borderWidth: 1.5,
+                          borderColor: isActive ? cat.color : applyAlpha(palette.textMuted, 0.3),
+                          backgroundColor: isActive ? cat.color + '18' : 'transparent',
+                        }}
+                      >
+                        <Ionicons name={cat.icon} size={14} color={isActive ? cat.color : palette.textMuted} />
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? cat.color : palette.textMuted }}>
+                          {cat.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <TextInput
+                  style={styles.input}
+                  value={tag}
+                  onChangeText={handleTagChange}
+                  placeholder={t('groups.expenseCategoryPlaceholder')}
+                  placeholderTextColor={placeholderColor}
+                  onBlur={() => touchField('tag')}
+                />
+              )}
+              {!isPropertyGroup && (
+                <Text style={[styles.helperText, { color: helperTextColor }]}>{t('groups.expenseCategoryHint')}</Text>
+              )}
               {showFieldError('tag') && (
                 <Text style={[styles.inlineError, { color: inlineErrorColor }]}>{getFieldError('tag')}</Text>
               )}
             </View>
 
             <View style={styles.toggleRow}>
-              <Text style={styles.label}>Detalle por items</Text>
+              <Text style={styles.label}>{t('groups.expenseItemizedLabel')}</Text>
               <Switch
                 value={useItems}
                 onValueChange={setUseItems}
@@ -796,7 +838,7 @@ export function CreateExpenseModal({
 
             {useItems && (
               <Text style={styles.helperText}>
-                El total se calculará automáticamente sumando los items.
+                {t('groups.expenseItemizedHint')}
               </Text>
             )}
             {fieldErrors.items && (
@@ -806,18 +848,18 @@ export function CreateExpenseModal({
 
           {useItems && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Detalles del gasto</Text>
+              <Text style={styles.sectionTitle}>{t('groups.expenseItemizedDetails')}</Text>
 
               {hasPendingAssignments && (
                 <Text style={styles.pendingAssignmentsNotice}>
-                  Asigna quién participa en cada item tocando los nombres.
+                  {t('groups.expenseItemizedHint2')}
                 </Text>
               )}
 
               {items.map((item) => (
                 <View key={item.id} style={styles.itemCard}>
                   <View style={styles.itemHeader}>
-                    <Text style={styles.itemTitle}>Item</Text>
+                    <Text style={styles.itemTitle}>{t('groups.expenseItemTitle')}</Text>
                     {items.length > 1 && (
                       <TouchableOpacity
                         onPress={() => handleRemoveItem(item.id)}
@@ -830,12 +872,12 @@ export function CreateExpenseModal({
 
                   <View style={styles.itemRow}>
                     <View style={[styles.itemField, styles.itemFieldLarge]}>
-                      <Text style={styles.itemLabel}>Descripción</Text>
+                      <Text style={styles.itemLabel}>{t('groups.expenseItemDesc')}</Text>
                       <TextInput
                         style={styles.itemInput}
                         value={item.description}
                         onChangeText={(text) => handleUpdateItemField(item.id, 'description', text)}
-                        placeholder="Ej: Pizza grande"
+                        placeholder={t('groups.expenseItemDescPlaceholder')}
                         placeholderTextColor={placeholderColor}
                       />
                     </View>
@@ -843,7 +885,7 @@ export function CreateExpenseModal({
 
                   <View style={styles.itemRow}>
                     <View style={styles.itemField}>
-                      <Text style={styles.itemLabel}>Monto</Text>
+                      <Text style={styles.itemLabel}>{t('groups.expenseItemAmount')}</Text>
                       <TextInput
                         style={styles.itemInput}
                         value={item.amount}
@@ -855,7 +897,7 @@ export function CreateExpenseModal({
                     </View>
 
                     <View style={styles.itemFieldSmall}>
-                      <Text style={styles.itemLabel}>Cantidad</Text>
+                      <Text style={styles.itemLabel}>{t('groups.expenseItemQty')}</Text>
                       <TextInput
                         style={styles.itemInput}
                         value={item.quantity}
@@ -868,7 +910,7 @@ export function CreateExpenseModal({
                   </View>
 
                   <View>
-                    <Text style={[styles.itemLabel, styles.itemMembersLabel]}>Participan</Text>
+                    <Text style={[styles.itemLabel, styles.itemMembersLabel]}>{t('groups.expenseItemParticipants')}</Text>
                     <View style={styles.itemMembersContainer}>
                       {groupMembers.map(member => {
                         const isSelected = item.selectedMembers.includes(member.id);
@@ -887,7 +929,7 @@ export function CreateExpenseModal({
                     </View>
                     {item.selectedMembers.length === 0 && (
                       <Text style={styles.itemMembersHint}>
-                        Selecciona al menos un participante para este item.
+                        {t('groups.expenseItemParticipantError')}
                       </Text>
                     )}
                   </View>
@@ -901,11 +943,11 @@ export function CreateExpenseModal({
                   color={palette.primary}
                   style={styles.addItemIcon}
                 />
-                <Text style={styles.addItemText}>Agregar item</Text>
+                <Text style={styles.addItemText}>{t('groups.expenseAddItem')}</Text>
               </TouchableOpacity>
 
               <View style={styles.itemsTotalContainer}>
-                <Text style={styles.itemsTotalLabel}>Total items:</Text>
+                <Text style={styles.itemsTotalLabel}>{t('groups.expenseItemsTotal')}</Text>
                 <Text style={styles.itemsTotalValue}>${itemsTotalValue.toFixed(2)}</Text>
               </View>
             </View>
@@ -913,7 +955,7 @@ export function CreateExpenseModal({
 
           {/* Quien pagó */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>¿Quién pagó?</Text>
+            <Text style={styles.sectionTitle}>{t('groups.expenseWhoPaid')}</Text>
             {groupMembers.map(member => (
               <TouchableOpacity
                 key={member.id}
@@ -941,7 +983,7 @@ export function CreateExpenseModal({
           {/* División del gasto */}
           <View style={styles.section}>
             <View style={styles.divisionHeader}>
-              <Text style={styles.sectionTitle}>División del gasto</Text>
+              <Text style={styles.sectionTitle}>{t('groups.expenseDivisionLabel')}</Text>
               <Switch
                 value={isCustomDivision}
                 onValueChange={setIsCustomDivision}
@@ -956,23 +998,23 @@ export function CreateExpenseModal({
 
             {useItems ? (
               <Text style={styles.divisionDescription}>
-                Cuando usas items detallados las participaciones se calculan automáticamente según los items seleccionados.
+                {t('groups.expenseDivisionItemsNote')}
               </Text>
             ) : !isCustomDivision ? (
               <Text style={styles.divisionDescription}>
-                El gasto se dividirá en partes iguales entre todos los miembros
+                {t('groups.expenseDivisionEqualNote')}
               </Text>
             ) : (
               <>
                 <View style={styles.customDivisionHeader}>
                   <Text style={styles.divisionDescription}>
-                    Asigna porcentajes personalizados (deben sumar 100%)
+                    {t('groups.expenseDivisionCustomNote')}
                   </Text>
                   <TouchableOpacity
                     onPress={distributeEqually}
                     style={styles.equalButton}
                   >
-                    <Text style={styles.equalButtonText}>Distribuir igual</Text>
+                    <Text style={styles.equalButtonText}>{t('groups.expenseDivisionEqualBtn')}</Text>
                   </TouchableOpacity>
                 </View>
 

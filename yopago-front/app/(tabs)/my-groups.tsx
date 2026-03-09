@@ -756,11 +756,12 @@ function MisGruposContent() {
 }
 
 export default function MisGruposScreen() {
+	const { t } = useTranslation();
 	return (
 		<ProtectedRoute showLoginButton={true}>
 			<Stack.Screen
 				options={{
-					title: 'Mis Grupos',
+					title: t('groups.myGroups'),
 					headerShown: false,
 				}}
 			/>

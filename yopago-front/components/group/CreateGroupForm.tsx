@@ -22,6 +22,14 @@ import { CreateGroupRequest, CreateGroupResponse } from '../../services/types';
 import { ThemedButton } from '../ui/Button';
 import GroupCreatedModal from './GroupCreatedModal';
 
+type PropertyTypeId = 'apartamento' | 'casa' | 'finca';
+const PROPERTY_TYPES: { id: PropertyTypeId; labelKey: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { id: 'apartamento', labelKey: 'groups.propertyTypeApartamento', icon: 'business' },
+  { id: 'casa',        labelKey: 'groups.propertyTypeCasa',         icon: 'home' },
+  { id: 'finca',       labelKey: 'groups.propertyTypeFinca',        icon: 'leaf' },
+];
+const STORAGE_KEY_PROPERTY_META = 'yopago_property_meta';
+
 export default function CreateGroupForm() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -37,6 +45,8 @@ export default function CreateGroupForm() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [createdGroup, setCreatedGroup] = useState<CreateGroupResponse | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [propertyTypeId, setPropertyTypeId] = useState<PropertyTypeId>('apartamento');
+  const [propertyAddress, setPropertyAddress] = useState('');
 
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};
@@ -68,6 +78,18 @@ export default function CreateGroupForm() {
     }
   };
 
+  const savePropertyMeta = async (groupId: number) => {
+    if (groupType !== 'propiedad') return;
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY_PROPERTY_META);
+      const map: Record<string, { propertyType: PropertyTypeId; address: string }> = raw ? JSON.parse(raw) : {};
+      map[String(groupId)] = { propertyType: propertyTypeId, address: propertyAddress.trim() };
+      await AsyncStorage.setItem(STORAGE_KEY_PROPERTY_META, JSON.stringify(map));
+    } catch {
+      // Non-critical
+    }
+  };
+
   const handleCreateGroup = async () => {
     if (!validateForm()) {
       return;
@@ -87,12 +109,15 @@ export default function CreateGroupForm() {
       console.log('✅ Group created successfully:', response);
 
       await saveGroupType(response.groupId, groupType);
+      await savePropertyMeta(response.groupId);
 
       setCreatedGroup(response);
       setShowSuccessModal(true);
 
       setFormData({ name: '', description: '' });
       setGroupType('general');
+      setPropertyTypeId('apartamento');
+      setPropertyAddress('');
       setErrors({});
 
     } catch (error) {
@@ -180,6 +205,48 @@ export default function CreateGroupForm() {
             </View>
             <Text style={styles.typeHint}>{t(selectedType.descriptionKey)}</Text>
           </View>
+
+          {/* Property Metadata — only shown when type is "propiedad" */}
+          {groupType === 'propiedad' && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>{t('groups.propertyType')}</Text>
+              <View style={styles.typeGrid}>
+                {PROPERTY_TYPES.map((pt) => {
+                  const isActive = propertyTypeId === pt.id;
+                  return (
+                    <Pressable
+                      key={pt.id}
+                      style={[
+                        styles.typeChip,
+                        isActive && { borderColor: '#10B981', backgroundColor: '#10B98118' },
+                      ]}
+                      onPress={() => setPropertyTypeId(pt.id)}
+                      disabled={loading}
+                    >
+                      <Ionicons
+                        name={pt.icon}
+                        size={18}
+                        color={isActive ? '#10B981' : palette.textMuted}
+                      />
+                      <Text style={[styles.typeChipLabel, { color: isActive ? '#10B981' : palette.textMuted }]}>
+                        {t(pt.labelKey)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <TextInput
+                style={[styles.input, { marginTop: palette.spacing.sm }]}
+                placeholder={t('groups.propertyAddressPlaceholder')}
+                placeholderTextColor={palette.textMuted}
+                value={propertyAddress}
+                onChangeText={setPropertyAddress}
+                maxLength={100}
+                editable={!loading}
+              />
+              <Text style={styles.typeHint}>{t('groups.propertyAddress')}</Text>
+            </View>
+          )}
 
           {/* Group Name */}
           <View style={styles.inputContainer}>

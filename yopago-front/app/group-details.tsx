@@ -3,6 +3,7 @@ import { ThemedButton } from '@/components/ui/Button';
 import { Colors, type AppPalette } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useGroupTypesMap } from '@/hooks/use-group-types';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import type { ComponentProps } from 'react';
@@ -23,13 +24,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { type ReceiptProcessingPayload } from '../components/group/CaptureReceiptContent';
 import { CaptureReceiptModal } from '../components/group/CaptureReceiptModal';
+import ExportPDFButton from '../components/group/ExportPDFButton';
 import { CreateExpenseModal } from '../components/group/CreateExpenseModal';
 import ExpenseDetailModal from '../components/group/ExpenseDetailModal';
 import GroupInviteModal from '../components/group/GroupInviteModal';
 import { JoinGroupModal } from '../components/group/JoinGroupModal';
 import RecordPaymentModal, { PaymentFormSubmission, PaymentMethod } from '../components/group/RecordPaymentModal';
+import RecurringExpensesModal from '../components/group/RecurringExpensesModal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useThemedAlert } from '../components/ui/ThemedAlert';
+import { usePropertyMeta } from '../hooks/use-property-meta';
+import { useRecurringExpenses } from '../hooks/use-recurring-expenses';
 import { authenticatedApiService, CreateExpenseRequest, JoinGroupMemberResponse } from '../services/authenticatedApiService';
 import { useRealTime } from '../contexts/RealTimeContext';
 import {
@@ -246,6 +251,9 @@ export default function GroupDetailsScreen() {
   const groupId = Array.isArray(params.groupId) ? params.groupId[0] : params.groupId;
   const groupTypesMap = useGroupTypesMap([groupId]);
   const currentGroupType = groupId ? groupTypesMap[groupId] : undefined;
+  const isPropertyGroup = currentGroupType?.id === 'propiedad';
+  const { meta: propertyMeta } = usePropertyMeta(groupId ? Number(groupId) : undefined);
+  const { pendingTemplates, markCreated } = useRecurringExpenses(groupId ? Number(groupId) : undefined);
 
   const [groupDetails, setGroupDetails] = useState<GroupDetailsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -269,6 +277,12 @@ export default function GroupDetailsScreen() {
   const [confirmingPaymentId, setConfirmingPaymentId] = useState<number | null>(null);
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [didAutoOpenPayment, setDidAutoOpenPayment] = useState(false);
+  const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const [registeringRecurring, setRegisteringRecurring] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [deepLinkPaymentPrefill, setDeepLinkPaymentPrefill] = useState<
     | {
         toMemberId: number;
@@ -288,6 +302,7 @@ export default function GroupDetailsScreen() {
   const insets = useSafeAreaInsets();
   
   const { showAlert, AlertComponent } = useThemedAlert();
+  const { t, i18n } = useTranslation();
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const getParamValue = useCallback((value: string | string[] | undefined) => {
@@ -346,7 +361,7 @@ export default function GroupDetailsScreen() {
   const loadGroupDetails = useCallback(async () => {
     try {
       if (!groupId) {
-        showAlert('Error', 'ID de grupo no válido');
+        showAlert(t('common.error'), t('groups.invalidGroupId'));
         router.back();
         return;
       }
@@ -385,15 +400,15 @@ export default function GroupDetailsScreen() {
     } catch (error) {
       console.error('❌ Error loading group details:', error);
       showAlert(
-        'Error',
-        'No se pudo cargar la información del grupo',
+        t('common.error'),
+        t('groups.loadErrorGroup'),
         [
           {
-            text: 'Reintentar',
+            text: t('groups.retry'),
             onPress: () => loadGroupDetails(),
           },
           {
-            text: 'Volver',
+            text: t('common.back'),
             onPress: () => router.back(),
           },
         ]
@@ -505,7 +520,7 @@ export default function GroupDetailsScreen() {
     const memoParam = getParamValue(params.memo);
 
     const recipient = groupDetails.members.find((member: any) => member.id === toParam);
-    const recipientName = recipient?.name || recipient?.email || `Miembro #${toParam}`;
+    const recipientName = recipient?.name || recipient?.email || t('groups.memberDeepLink', { id: toParam });
 
     setPaymentContext(null);
     setDeepLinkPaymentPrefill({
@@ -544,15 +559,15 @@ export default function GroupDetailsScreen() {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) {
-      return 'Fecha desconocida';
+      return t('groups.dateUnknown');
     }
 
     const parsed = new Date(dateString);
     if (Number.isNaN(parsed.getTime())) {
-      return 'Fecha desconocida';
+      return t('groups.dateUnknown');
     }
 
-    return parsed.toLocaleDateString('es-ES', {
+    return parsed.toLocaleDateString(i18n.language, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -588,21 +603,21 @@ export default function GroupDetailsScreen() {
         const direction = typeof event.direction === 'string' ? event.direction : undefined;
         const amountValue = typeof event.amount === 'number' ? event.amount : undefined;
 
-        let message = 'Se registró un nuevo pago.';
+        let message = t('groups.paymentNew');
         if (direction === 'received') {
           message = amountValue
-            ? `Has recibido un nuevo pago de ${formatCurrency(amountValue)}`
-            : 'Has recibido un nuevo pago.';
+            ? t('groups.paymentReceivedAmount', { amount: formatCurrency(amountValue) })
+            : t('groups.paymentReceived');
         } else if (direction === 'sent') {
           message = amountValue
-            ? `Tu pago de ${formatCurrency(amountValue)} se registró correctamente.`
-            : 'Tu pago fue registrado correctamente.';
+            ? t('groups.paymentSentAmount', { amount: formatCurrency(amountValue) })
+            : t('groups.paymentSent');
         }
         setFeedback({ type: 'success', message });
       } else if (event.type === 'user.payment.confirmed') {
-        setFeedback({ type: 'success', message: 'Un pago fue confirmado.' });
+        setFeedback({ type: 'success', message: t('groups.paymentConfirmedEvent') });
       } else if (event.type === 'user.payment.deleted') {
-        setFeedback({ type: 'error', message: 'Un pago pendiente fue eliminado.' });
+        setFeedback({ type: 'error', message: t('groups.paymentDeleted') });
       }
 
       scheduleDataRefresh();
@@ -634,7 +649,7 @@ export default function GroupDetailsScreen() {
       return name;
     }
     if (typeof member === 'number') {
-      return `Miembro #${member}`;
+      return t('groups.memberDeepLink', { id: member });
     }
     return fallbackLabel;
   };
@@ -712,13 +727,13 @@ export default function GroupDetailsScreen() {
     }
     const normalized = method.toString().toLowerCase();
     if (['transfer', 'transferencia', 'bank_transfer', 'transferencia_bancaria'].includes(normalized)) {
-      return 'transferencia';
+      return t('groups.methodTransfer');
     }
     if (['cash', 'efectivo', 'cash_payment', 'pago_efectivo', 'pago-efectivo', 'pago efectivo'].includes(normalized)) {
-      return 'efectivo';
+      return t('groups.methodCash');
     }
     if (['other', 'otro', 'otros'].includes(normalized)) {
-      return 'otro';
+      return t('groups.methodOther');
     }
     return normalized;
   };
@@ -734,21 +749,21 @@ export default function GroupDetailsScreen() {
     if (metadata?.type === PAYMENT_NOTE_TYPE && metadata.expenseDescription) {
       const methodLabel = describePaymentMethod(metadata.paymentMethod);
       return methodLabel
-        ? `Pago de ${metadata.expenseDescription} (${methodLabel})`
-        : `Pago de ${metadata.expenseDescription}`;
+        ? t('groups.paymentNoteExpenseMethod', { desc: metadata.expenseDescription, method: methodLabel })
+        : t('groups.paymentNoteExpense', { desc: metadata.expenseDescription });
     }
 
     if (metadata?.type === MANUAL_PAYMENT_NOTE_TYPE) {
       const methodLabel = describePaymentMethod(metadata.paymentMethod);
       if (methodLabel) {
-        return `Pago registrado (${methodLabel})`;
+        return t('groups.paymentNoteManualMethod', { method: methodLabel });
       }
-      return 'Pago registrado manualmente';
+      return t('groups.paymentNoteManual');
     }
 
     const fallbackMethod = describePaymentMethod(metadata?.paymentMethod);
     if (fallbackMethod) {
-      return `Pago registrado (${fallbackMethod})`;
+      return t('groups.paymentNoteManualMethod', { method: fallbackMethod });
     }
 
     return payment.note ?? null;
@@ -766,12 +781,37 @@ export default function GroupDetailsScreen() {
 
       await authenticatedApiService.createExpense(expense);
       setReceiptDraft(null);
-      showAlert('Éxito', 'Gasto creado correctamente');
+      showAlert(t('common.success'), t('groups.expenseCreated'));
       await loadGroupDetails();
     } catch (error) {
       console.error('Error creating expense:', error);
       throw error; // Reenviar el error para que el modal lo maneje
     }
+  };
+
+  const handleRegisterRecurring = async () => {
+    if (!groupId || pendingTemplates.length === 0) return;
+    setRegisteringRecurring(true);
+    const registeredIds: string[] = [];
+    for (const tmpl of pendingTemplates) {
+      try {
+        await authenticatedApiService.createExpense({
+          note: tmpl.note,
+          amount: tmpl.amount,
+          tag: tmpl.tag,
+          payerId: tmpl.payerId,
+          groupId: Number(groupId),
+        });
+        registeredIds.push(tmpl.id);
+      } catch (err) {
+        console.error('[handleRegisterRecurring] Failed for template', tmpl.id, err);
+      }
+    }
+    if (registeredIds.length > 0) {
+      await markCreated(registeredIds);
+      scheduleDataRefresh();
+    }
+    setRegisteringRecurring(false);
   };
 
   const handleReceiptReady = useCallback(
@@ -838,7 +878,7 @@ export default function GroupDetailsScreen() {
     } catch (error) {
       setFeedback({
         type: 'error',
-        message: error instanceof Error ? error.message : 'No se pudo eliminar el miembro',
+        message: error instanceof Error ? error.message : t('groups.memberRemoveError'),
       });
     } finally {
       setRemovingMember(false);
@@ -848,20 +888,20 @@ export default function GroupDetailsScreen() {
   const handleConfirmPayment = useCallback(
     async (payment: PaymentResponse) => {
       if (!currentUserId) {
-        showAlert('Error', 'No se pudo identificar al usuario actual para confirmar el pago.');
+        showAlert(t('common.error'), t('groups.paymentConfirmUserError'));
         return;
       }
 
       setConfirmingPaymentId(payment.id);
       try {
         await authenticatedApiService.confirmPayment(payment.id.toString(), currentUserId);
-        setFeedback({ type: 'success', message: 'Pago confirmado correctamente' });
+        setFeedback({ type: 'success', message: t('groups.paymentConfirmedSuccess') });
         await loadGroupDetails();
       } catch (error) {
         console.error('Error confirming payment:', error);
         setFeedback({
           type: 'error',
-          message: error instanceof Error ? error.message : 'No se pudo confirmar el pago',
+          message: error instanceof Error ? error.message : t('groups.paymentConfirmError'),
         });
       } finally {
         setConfirmingPaymentId(null);
@@ -919,14 +959,14 @@ export default function GroupDetailsScreen() {
       ...candidates: (string | null | undefined)[]
     ): string | undefined => candidates.find((candidate) => candidate?.trim())?.trim();
 
-    const inferredDescription = pickFirstString(receiptDraft.note, expense.note, 'Recibo procesado');
-    const inferredTag = pickFirstString(expense.tag, 'Recibo AI');
+    const inferredDescription = pickFirstString(receiptDraft.note, expense.note, t('groups.receiptProcessed'));
+    const inferredTag = pickFirstString(expense.tag, t('groups.receiptAI'));
 
     const inferredPayerId = expense.payer?.id ?? receiptDraft.payerId ?? groupDetails.members[0]?.id;
 
     return {
       note: inferredDescription ?? '',
-      tag: inferredTag ?? 'Recibo AI',
+      tag: inferredTag ?? t('groups.receiptAI'),
       payerId: inferredPayerId ?? receiptDraft.payerId,
       amount: inferredAmount,
       items: normalizedItems.length > 0 ? normalizedItems : undefined,
@@ -939,8 +979,8 @@ export default function GroupDetailsScreen() {
 
   const modalSuggestedAmount = paymentContext?.share.amount ?? deepLinkPaymentPrefill?.amount ?? 0;
   const modalRecipientName = paymentContext
-    ? paymentContext.expense.payer?.name || paymentContext.expense.paidBy?.name || 'Miembro'
-    : deepLinkPaymentPrefill?.toMemberName ?? 'Miembro';
+    ? paymentContext.expense.payer?.name || paymentContext.expense.paidBy?.name || t('groups.memberFallback')
+    : deepLinkPaymentPrefill?.toMemberName ?? t('groups.memberFallback');
   const modalRecipientId = paymentContext
     ? paymentContext.expense.payer?.id ?? paymentContext.expense.paidBy?.id ?? null
     : deepLinkPaymentPrefill?.toMemberId ?? null;
@@ -964,51 +1004,51 @@ export default function GroupDetailsScreen() {
     return [
       {
         id: 'overview' as GroupSection,
-        label: 'Resumen',
+        label: t('groups.tabOverview'),
         count: totalExpenses,
       },
       {
         id: 'members' as GroupSection,
-        label: 'Miembros',
+        label: t('groups.members'),
         count: totalMembers,
       },
       {
         id: 'expenses' as GroupSection,
-        label: 'Gastos',
+        label: t('groups.expenses'),
         count: expensesCount,
       },
       {
         id: 'balances' as GroupSection,
-        label: 'Balances',
+        label: t('groups.tabBalances'),
         count: balancesCount,
         disabled: balancesCount === 0,
       },
       {
         id: 'payments' as GroupSection,
-        label: 'Pagos',
+        label: t('groups.tabPayments'),
         count: paymentsCount,
         disabled: paymentsCount === 0,
       },
     ];
-  }, [confirmedPayments.length, groupDetails, pendingPayments.length]);
+  }, [confirmedPayments.length, groupDetails, pendingPayments.length, t]);
 
   const quickStats = useMemo(() => {
     const totalMembers = groupDetails?.totalMembers ?? groupDetails?.members?.length ?? 0;
     return [
       {
-        label: 'Miembros activos',
+        label: t('groups.statActiveMembers'),
         value: totalMembers.toString(),
       },
       {
-        label: 'Promedio por miembro',
+        label: t('groups.statAvgPerMember'),
         value: formatCurrency(groupDetails?.averagePerMember ?? 0),
       },
       {
-        label: 'Pagos pendientes',
+        label: t('groups.statPendingPayments'),
         value: pendingPayments.length.toString(),
       },
     ];
-  }, [formatCurrency, groupDetails, pendingPayments.length]);
+  }, [formatCurrency, groupDetails, pendingPayments.length, t]);
 
   const spotlightExpenses = useMemo(() => {
     if (!groupDetails?.expenses) {
@@ -1029,7 +1069,7 @@ export default function GroupDetailsScreen() {
       <ProtectedRoute>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007bff" />
-          <Text style={styles.loadingText}>Cargando detalles del grupo...</Text>
+          <Text style={styles.loadingText}>{t('groups.loadingDetails')}</Text>
         </View>
       </ProtectedRoute>
     );
@@ -1039,8 +1079,8 @@ export default function GroupDetailsScreen() {
     return (
       <ProtectedRoute>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>No se pudo cargar la información del grupo</Text>
-          <ThemedButton title="Reintentar" onPress={loadGroupDetails} style={styles.retryButton} />
+          <Text style={styles.errorText}>{t('groups.loadErrorGroup')}</Text>
+          <ThemedButton title={t('groups.retry')} onPress={loadGroupDetails} style={styles.retryButton} />
         </View>
       </ProtectedRoute>
     );
@@ -1315,7 +1355,7 @@ export default function GroupDetailsScreen() {
                   },
                 ]}
                 accessibilityRole="button"
-                accessibilityLabel="Volver a Mis Grupos"
+                accessibilityLabel={t('groups.backToGroups')}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
                 <Ionicons name="chevron-back" size={20} color={palette.text} />
@@ -1340,7 +1380,7 @@ export default function GroupDetailsScreen() {
                     },
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel="Ver descripción del grupo"
+                  accessibilityLabel={t('groups.viewDescription')}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
                   <Ionicons
@@ -1370,7 +1410,7 @@ export default function GroupDetailsScreen() {
                   ]}
                 >
                   <View style={styles.headerDescriptionHeader}>
-                    <Text style={[styles.headerDescriptionTitle, { color: palette.text }]}>Descripción</Text>
+                    <Text style={[styles.headerDescriptionTitle, { color: palette.text }]}>{t('groups.descriptionTitle')}</Text>
                   </View>
                   <Text style={[styles.headerDescriptionText, { color: palette.text }]}>
                     {groupDetails.description}
@@ -1380,17 +1420,17 @@ export default function GroupDetailsScreen() {
             ) : null}
 
             <View style={styles.headerTotalBlock}>
-              <Text style={[styles.headerTotalLabel, { color: palette.textMuted }]}>Total de gastos</Text>
+              <Text style={[styles.headerTotalLabel, { color: palette.textMuted }]}>{t('groups.headerTotalExpenses')}</Text>
               <Text style={styles.headerTotalValue}>{formatCurrency(groupDetails.totalAmount ?? 0)}</Text>
             </View>
 
             <View style={styles.headerMetaRow}>
               <View style={[styles.headerMetaBadge, { borderColor: applyAlpha(palette.text, 0.12) }]}>
-                <Text style={[styles.headerMetaBadgeLabel, { color: palette.textMuted }]}>Código</Text>
+                <Text style={[styles.headerMetaBadgeLabel, { color: palette.textMuted }]}>{t('groups.headerCode')}</Text>
                 <Text style={[styles.headerMetaBadgeValue, { color: palette.success }]}>{groupDetails.code}</Text>
               </View>
               <View style={[styles.headerMetaBadge, { borderColor: applyAlpha(palette.text, 0.12) }]}>
-                <Text style={[styles.headerMetaBadgeLabel, { color: palette.textMuted }]}>Creado</Text>
+                <Text style={[styles.headerMetaBadgeLabel, { color: palette.textMuted }]}>{t('groups.headerCreated')}</Text>
                 <Text style={[styles.headerMetaBadgeValue, { color: palette.textMuted }]}>
                   {formatDate(groupDetails.createdAt)}
                 </Text>
@@ -1404,6 +1444,35 @@ export default function GroupDetailsScreen() {
                 </View>
               )}
             </View>
+            {isPropertyGroup && propertyMeta && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                {propertyMeta.propertyType && (
+                  <View style={[styles.headerMetaBadge, { borderColor: '#10B981', backgroundColor: '#10B98118' }]}>
+                    <Ionicons name="home" size={11} color="#10B981" />
+                    <Text style={[styles.headerMetaBadgeValue, { color: '#10B981', textTransform: 'capitalize' }]}>
+                      {propertyMeta.propertyType}
+                    </Text>
+                  </View>
+                )}
+                {!!propertyMeta.address && (
+                  <View style={[styles.headerMetaBadge, { borderColor: applyAlpha(palette.text, 0.12) }]}>
+                    <Ionicons name="location-outline" size={11} color={palette.textMuted} />
+                    <Text style={[styles.headerMetaBadgeValue, { color: palette.textMuted }]} numberOfLines={1}>
+                      {propertyMeta.address}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+            {groupDetails && (
+              <View style={{ alignItems: 'flex-end', marginTop: 8 }}>
+                <ExportPDFButton
+                  groupDetails={groupDetails}
+                  formatCurrency={formatCurrency}
+                  locale={i18n.language}
+                />
+              </View>
+            )}
           </View>
         </ThemedView>
         <View style={[styles.sectionTabsWrapper, { borderBottomColor: applyAlpha(palette.text, 0.08) }]}
@@ -1466,15 +1535,15 @@ export default function GroupDetailsScreen() {
         {activeSection === 'overview' && (
           <>
             <View style={styles.summaryCard}>
-              <Text style={styles.cardTitle}>Resumen Financiero</Text>
+              <Text style={styles.cardTitle}>{t('groups.financialSummary')}</Text>
 
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Número de Gastos:</Text>
+                <Text style={styles.summaryLabel}>{t('groups.expenseCount')}</Text>
                 <Text style={styles.summaryValue}>{groupDetails.totalExpenses}</Text>
               </View>
-              
+
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Promedio por Miembro:</Text>
+                <Text style={styles.summaryLabel}>{t('groups.avgPerMember')}</Text>
                 <Text style={styles.summaryValue}>
                   {formatCurrency(groupDetails.averagePerMember ?? 0)}
                 </Text>
@@ -1493,20 +1562,20 @@ export default function GroupDetailsScreen() {
             {spotlightExpenses.length > 0 && (
               <View style={styles.snapshotCard}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Últimos gastos</Text>
+                  <Text style={styles.cardTitle}>{t('groups.latestExpenses')}</Text>
                   <TouchableOpacity onPress={() => setActiveSection('expenses')}>
-                    <Text style={styles.snapshotLinkText}>Ver todos</Text>
+                    <Text style={styles.snapshotLinkText}>{t('groups.viewAll')}</Text>
                   </TouchableOpacity>
                 </View>
                 {spotlightExpenses.map((expense) => {
-                  const description = expense.description || expense.note || 'Gasto';
+                  const description = expense.description || expense.note || t('groups.expenseFallback');
                   const expenseDate = expense.date || expense.createdAt || groupDetails.createdAt;
                   return (
                     <View key={`snapshot-expense-${expense.id}`} style={styles.snapshotItem}>
                       <View>
                         <Text style={styles.snapshotItemTitle}>{description}</Text>
                         <Text style={styles.snapshotItemMeta}>
-                          {formatDate(expenseDate)} • {expense.paidBy?.name || expense.payer?.name || 'Miembro'}
+                          {formatDate(expenseDate)} • {expense.paidBy?.name || expense.payer?.name || t('groups.memberFallback')}
                         </Text>
                       </View>
                       <Text style={styles.snapshotItemAmount}>{formatCurrency(expense.amount)}</Text>
@@ -1519,9 +1588,9 @@ export default function GroupDetailsScreen() {
             {balanceSnapshot.length > 0 && (
               <View style={styles.snapshotCard}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Balances rápidos</Text>
+                  <Text style={styles.cardTitle}>{t('groups.quickBalances')}</Text>
                   <TouchableOpacity onPress={() => setActiveSection('balances')}>
-                    <Text style={styles.snapshotLinkText}>Ir a balances</Text>
+                    <Text style={styles.snapshotLinkText}>{t('groups.goToBalances')}</Text>
                   </TouchableOpacity>
                 </View>
                 {balanceSnapshot.map((share, index) => {
@@ -1530,9 +1599,9 @@ export default function GroupDetailsScreen() {
                   return (
                     <View key={`snapshot-balance-${share.memberId ?? index}`} style={styles.snapshotItem}>
                       <View>
-                        <Text style={styles.snapshotItemTitle}>{share.memberName || 'Miembro'}</Text>
+                        <Text style={styles.snapshotItemTitle}>{share.memberName || t('groups.memberFallback')}</Text>
                         <Text style={styles.snapshotItemMeta}>
-                          {isPositive ? 'Saldo a favor' : 'Saldo por pagar'}
+                          {isPositive ? t('groups.balanceFavor') : t('groups.balanceDue')}
                         </Text>
                       </View>
                       <Text
@@ -1555,15 +1624,15 @@ export default function GroupDetailsScreen() {
         <View style={styles.membersCard}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>
-              Miembros ({groupDetails.totalMembers})
+              {t('groups.membersTitle', { count: groupDetails.totalMembers })}
             </Text>
             <ThemedButton
-              title="+ Agregar"
+              title={t('groups.addBtn')}
               onPress={() => setShowJoinGroupModal(true)}
               variant="secondary"
               style={styles.addButton}
               textStyle={styles.addButtonText}
-              accessibilityLabel="Agregar miembro"
+              accessibilityLabel={t('groups.addMemberLabel')}
             />
           </View>
           
@@ -1583,7 +1652,7 @@ export default function GroupDetailsScreen() {
                   ) : null}
                   {member.joinedAt && (
                     <Text style={styles.memberJoinDate}>
-                      Se unió el {formatDate(member.joinedAt)}
+                      {t('groups.memberJoinedAt', { date: formatDate(member.joinedAt) })}
                     </Text>
                   )}
                 </View>
@@ -1591,7 +1660,7 @@ export default function GroupDetailsScreen() {
                 <View style={styles.memberActions}>
                   {isCreator ? (
                     <View style={styles.creatorBadge}>
-                      <Text style={styles.creatorBadgeText}>Creador</Text>
+                      <Text style={styles.creatorBadgeText}>{t('groups.creatorBadge')}</Text>
                     </View>
                   ) : (
                     <Pressable
@@ -1605,7 +1674,7 @@ export default function GroupDetailsScreen() {
                         pressed && styles.memberMenuButtonPressed,
                       ]}
                       accessibilityRole="button"
-                      accessibilityLabel={`Opciones para ${member.name}`}
+                      accessibilityLabel={t('groups.memberOptions', { name: member.name })}
                       hitSlop={12}
                     >
                       <Ionicons
@@ -1636,7 +1705,7 @@ export default function GroupDetailsScreen() {
                         }}
                       >
                         <Ionicons name="person-remove" size={18} color={palette.accent} />
-                        <Text style={styles.memberMenuItemText}>Eliminar miembro</Text>
+                        <Text style={styles.memberMenuItemText}>{t('groups.removeMember')}</Text>
                       </Pressable>
                     </View>
                   </View>
@@ -1650,34 +1719,96 @@ export default function GroupDetailsScreen() {
         {activeSection === 'expenses' && (
         <View style={styles.expensesCard}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Gastos</Text>
-            <ThemedButton
-              title="+ Agregar"
-              onPress={() => {
-                setReceiptDraft(null);
-                setShowCreateExpenseModal(true);
-              }}
-              variant="secondary"
-              style={styles.addButton}
-              textStyle={styles.addButtonText}
-              accessibilityLabel="Agregar gasto"
-            />
+            <Text style={styles.cardTitle}>{t('groups.expenses')}</Text>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              {isPropertyGroup && (
+                <Pressable
+                  onPress={() => setShowRecurringModal(true)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 14, borderWidth: 1, borderColor: palette.divider }}
+                >
+                  <Ionicons name="repeat" size={14} color={palette.textMuted} />
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: palette.textMuted }}>{t('groups.recurringExpenses')}</Text>
+                </Pressable>
+              )}
+              <ThemedButton
+                title={t('groups.addBtn')}
+                onPress={() => {
+                  setReceiptDraft(null);
+                  setShowCreateExpenseModal(true);
+                }}
+                variant="secondary"
+                style={styles.addButton}
+                textStyle={styles.addButtonText}
+                accessibilityLabel={t('groups.addExpenseLabel')}
+              />
+            </View>
           </View>
 
-          {groupDetails.expenses.length === 0 ? (
+          {/* Month filter — propiedad groups only */}
+          {isPropertyGroup && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: palette.divider }}>
+              <Pressable
+                onPress={() => setSelectedMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="chevron-back" size={18} color={palette.primary} />
+              </Pressable>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: palette.text }}>
+                {selectedMonth.toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase())}
+              </Text>
+              <Pressable
+                onPress={() => setSelectedMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="chevron-forward" size={18} color={palette.primary} />
+              </Pressable>
+            </View>
+          )}
+
+          {/* Recurring banner — propiedad groups only */}
+          {isPropertyGroup && pendingTemplates.length > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F59E0B18', borderRadius: 8, padding: 12, margin: 8, borderWidth: 1, borderColor: '#F59E0B40' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>
+                  {t('groups.recurringPendingCount', { count: pendingTemplates.length })}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#B45309', marginTop: 2 }}>
+                  {selectedMonth.toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' })}
+                </Text>
+              </View>
+              <Pressable
+                onPress={handleRegisterRecurring}
+                disabled={registeringRecurring}
+                style={{ backgroundColor: '#F59E0B', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>
+                  {registeringRecurring ? t('groups.recurringRegistering') : t('groups.recurringRegister')}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
+          {(() => {
+            const expensesToShow = isPropertyGroup
+              ? groupDetails.expenses.filter((e) => {
+                  const d = new Date(e.date || e.createdAt || '');
+                  return !isNaN(d.getTime()) && d.getFullYear() === selectedMonth.getFullYear() && d.getMonth() === selectedMonth.getMonth();
+                })
+              : groupDetails.expenses;
+            return expensesToShow.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
-                No hay gastos registrados en este grupo
+                {t('groups.noExpensesGroup')}
               </Text>
               <Text style={styles.emptyStateSubtext}>
-                ¡Agrega el primer gasto para comenzar!
+                {t('groups.addFirstExpense')}
               </Text>
             </View>
           ) : (
-            groupDetails.expenses.map((expense) => {
-              const description = expense.description || expense.note || expense.tag || 'Gasto sin descripción';
+            expensesToShow.map((expense) => {
+              const description = expense.description || expense.note || expense.tag || t('groups.expenseNoDesc');
               const expenseDate = expense.date || expense.createdAt || groupDetails.createdAt;
-              const payerName = expense.paidBy?.name || expense.payer?.name || 'Miembro desconocido';
+              const payerName = expense.paidBy?.name || expense.payer?.name || t('groups.unknownMember');
               const hasItems = Array.isArray(expense.items) && expense.items.length > 0;
               const paymentState = getExpensePaymentState(expense);
               const {
@@ -1707,11 +1838,11 @@ export default function GroupDetailsScreen() {
                         {formatCurrency(expense.amount)}
                       </Text>
                       <Text style={styles.expenseDate}>
-                        {formatDate(expenseDate)} • Pagado por {payerName}
+                        {t('groups.expensePaidBy', { date: formatDate(expenseDate), name: payerName })}
                       </Text>
                       {hasItems && (
                         <Text style={styles.expenseMeta}>
-                          {expense.items?.length ?? 0} item(s) detallados
+                          {t('groups.itemsDetailed', { count: expense.items?.length ?? 0 })}
                         </Text>
                       )}
                       {showPayButton && (
@@ -1727,7 +1858,7 @@ export default function GroupDetailsScreen() {
                         >
                           <Ionicons name="wallet" size={16} color={palette.surface} style={{ marginRight: 6 }} />
                           <Text style={styles.inlinePayText}>
-                            Pagar {formatCurrency(userShare!.amount ?? 0)}
+                            {t('groups.payAction', { amount: formatCurrency(userShare!.amount ?? 0) })}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -1735,43 +1866,43 @@ export default function GroupDetailsScreen() {
                         <View style={[styles.paymentInlineNotice, styles.paymentInlinePending]}>
                           <Ionicons name="time" size={14} color={palette.warning} />
                           <Text style={styles.paymentInlineText}>
-                            Pago de {formatCurrency(pendingPaymentToPayer.amount)} en revisión
+                            {t('groups.paymentPendingAmount', { amount: formatCurrency(pendingPaymentToPayer.amount) })}
                           </Text>
                         </View>
                       )}
                       {!showPayButton && !pendingPaymentToPayer && confirmedPaymentToPayer && (
                         <View style={[styles.paymentInlineNotice, styles.paymentInlineConfirmed]}>
                           <Ionicons name="checkmark-circle" size={14} color={palette.success} />
-                          <Text style={styles.paymentInlineText}>Pago registrado</Text>
+                          <Text style={styles.paymentInlineText}>{t('groups.paymentRegisteredBadge')}</Text>
                         </View>
                       )}
                       {!isPayer && !showPayButton && !pendingPaymentToPayer && !confirmedPaymentToPayer && settled && (
                         <View style={[styles.paymentInlineNotice, styles.paymentInlineSettled]}>
                           <Ionicons name="checkmark" size={14} color={palette.primary} />
-                          <Text style={styles.paymentInlineText}>Saldo saldado</Text>
+                          <Text style={styles.paymentInlineText}>{t('groups.balanceSettled')}</Text>
                         </View>
                       )}
                       {isPayer && shareStatuses.length > 0 && (
                         <View style={styles.expenseShareStatusList}>
                           {shareStatuses.map((status) => {
                             const memberLabel = status.memberName ||
-                              (typeof status.memberId === 'number' ? `Miembro #${status.memberId}` : 'Miembro');
+                              (typeof status.memberId === 'number' ? t('groups.memberDeepLink', { id: status.memberId }) : t('groups.memberFallback'));
                             const amountLabel = formatCurrency(status.amount);
                             let badgeStyle = styles.expenseShareStatusBadgeUnpaid;
                             let iconName: ComponentProps<typeof Ionicons>['name'] = 'alert-circle';
                             let accentColor = palette.accent;
-                            let detailText = `Falta pagar ${amountLabel}`;
+                            let detailText = t('groups.shareUnpaid', { amount: amountLabel });
 
                             if (status.status === 'pending') {
                               badgeStyle = styles.expenseShareStatusBadgePending;
                               iconName = 'time';
                               accentColor = palette.warning;
-                              detailText = `Pago en revisión por ${amountLabel}`;
+                              detailText = t('groups.sharePending', { amount: amountLabel });
                             } else if (status.status === 'confirmed') {
                               badgeStyle = styles.expenseShareStatusBadgeConfirmed;
                               iconName = 'checkmark-circle';
                               accentColor = palette.success;
-                              detailText = `Pago confirmado de ${amountLabel}`;
+                              detailText = t('groups.shareConfirmed', { amount: amountLabel });
                             }
 
                             return (
@@ -1795,31 +1926,32 @@ export default function GroupDetailsScreen() {
                 </TouchableOpacity>
               );
             })
-          )}
+          );
+          })()}
         </View>
         )}
 
         {activeSection === 'balances' && groupDetails.aggregatedShares.length > 0 && (
           <View style={styles.balancesCard}>
-            <Text style={styles.cardTitle}>Balances</Text>
-            
+            <Text style={styles.cardTitle}>{t('groups.tabBalances')}</Text>
+
             {groupDetails.aggregatedShares.map((share, index) => {
               const totalPaid = share.totalPaid ?? share.totalAmount ?? 0;
               const totalOwed = share.totalOwed ?? 0;
               const balanceBeforePayments = share.balanceBeforePayments ?? (totalPaid - totalOwed);
               const balanceAfterPayments = share.balance ?? balanceBeforePayments;
               const balanceAdjustment = share.balanceAdjustment ?? (balanceAfterPayments - balanceBeforePayments);
-              const balanceLabel = balanceAfterPayments >= 0 ? 'Saldo a favor: ' : 'Saldo por pagar: ';
+              const balanceLabel = balanceAfterPayments >= 0 ? t('groups.balanceFavorLabel') : t('groups.balanceDueLabel');
 
               return (
                 <View key={share.memberId ?? index} style={styles.balanceItem}>
-                  <Text style={styles.balanceName}>{share.memberName || 'Miembro'}</Text>
+                  <Text style={styles.balanceName}>{share.memberName || t('groups.memberFallback')}</Text>
                   <View style={styles.balanceAmounts}>
                     <Text style={styles.balancePaid}>
-                      Pagó: {formatCurrency(totalPaid)}
+                      {t('groups.balancePaidLabel')}{formatCurrency(totalPaid)}
                     </Text>
                     <Text style={styles.balanceOwed}>
-                      Consumos: {formatCurrency(totalOwed)}
+                      {t('groups.balanceOwedLabel')}{formatCurrency(totalOwed)}
                     </Text>
                     <Text style={[
                       styles.balanceResult,
@@ -1830,7 +1962,7 @@ export default function GroupDetailsScreen() {
                     </Text>
                     {Math.abs(balanceAdjustment) > 0.009 && (
                       <Text style={styles.balanceAdjustment}>
-                        Ajuste por pagos confirmados:{' '}
+                        {t('groups.balanceAdjLabel')}
                         {balanceAdjustment > 0 ? '+' : '-'}
                         {formatCurrency(Math.abs(balanceAdjustment))}
                       </Text>
@@ -1844,19 +1976,19 @@ export default function GroupDetailsScreen() {
 
         {activeSection === 'balances' && groupDetails.aggregatedShares.length === 0 && (
           <View style={styles.snapshotCard}>
-            <Text style={styles.emptyStateText}>Aún no hay balances para mostrar.</Text>
+          <Text style={styles.emptyStateText}>{t('groups.noBalances')}</Text>
           </View>
         )}
 
         {activeSection === 'payments' && (pendingPayments.length > 0 || confirmedPayments.length > 0) && (
           <View style={styles.paymentsCard}>
-            <Text style={styles.cardTitle}>Pagos entre miembros</Text>
+            <Text style={styles.cardTitle}>{t('groups.paymentsTitle')}</Text>
 
             {confirmablePayments.length > 0 && (
               <View style={styles.paymentSection}>
-                <Text style={styles.paymentSectionTitle}>Pendientes para confirmar</Text>
+                <Text style={styles.paymentSectionTitle}>{t('groups.paymentsPendingConfirm')}</Text>
                 {confirmablePayments.map((payment) => {
-                  const payerName = resolveMemberName(payment.fromMember, 'Miembro');
+                  const payerName = resolveMemberName(payment.fromMember, t('groups.memberFallback'));
                   const createdAt = formatDate(payment.createdAt);
                   const paymentNote = getPaymentDisplayNote(payment);
                   return (
@@ -1871,7 +2003,7 @@ export default function GroupDetailsScreen() {
                         ) : null}
                       </View>
                       <ThemedButton
-                        title="Confirmar"
+                        title={t('common.confirm')}
                         onPress={() => handleConfirmPayment(payment)}
                         loading={confirmingPaymentId === payment.id}
                         style={styles.confirmButton}
@@ -1885,9 +2017,9 @@ export default function GroupDetailsScreen() {
 
             {outgoingPendingPayments.length > 0 && (
               <View style={styles.paymentSection}>
-                <Text style={styles.paymentSectionTitle}>Pagos registrados por ti</Text>
+                <Text style={styles.paymentSectionTitle}>{t('groups.paymentsOutgoing')}</Text>
                 {outgoingPendingPayments.map((payment) => {
-                  const receiverName = resolveMemberName(payment.toMember, 'Miembro');
+                  const receiverName = resolveMemberName(payment.toMember, t('groups.memberFallback'));
                   const createdAt = formatDate(payment.createdAt);
                   const paymentNote = getPaymentDisplayNote(payment);
                   return (
@@ -1895,14 +2027,14 @@ export default function GroupDetailsScreen() {
                       <View style={styles.paymentInfo}>
                         <Text style={styles.paymentAmount}>{formatCurrency(payment.amount)}</Text>
                         <Text style={styles.paymentMeta}>
-                          Para {receiverName} • {createdAt}
+                          {t('groups.paymentToMeta', { name: receiverName, date: createdAt })}
                         </Text>
                         {paymentNote ? (
                           <Text style={styles.paymentNote}>{paymentNote}</Text>
                         ) : null}
                       </View>
                       <View style={[styles.paymentStatusTag, styles.paymentStatusPending]}>
-                        <Text style={styles.paymentStatusText}>Pendiente</Text>
+                        <Text style={styles.paymentStatusText}>{t('groups.paymentStatusPending')}</Text>
                       </View>
                     </View>
                   );
@@ -1912,10 +2044,10 @@ export default function GroupDetailsScreen() {
 
             {otherPendingPayments.length > 0 && (
               <View style={styles.paymentSection}>
-                <Text style={styles.paymentSectionTitle}>Pagos pendientes de otros miembros</Text>
+                <Text style={styles.paymentSectionTitle}>{t('groups.paymentsOthers')}</Text>
                 {otherPendingPayments.map((payment) => {
-                  const payerName = resolveMemberName(payment.fromMember, 'Miembro');
-                  const receiverName = resolveMemberName(payment.toMember, 'Miembro');
+                  const payerName = resolveMemberName(payment.fromMember, t('groups.memberFallback'));
+                  const receiverName = resolveMemberName(payment.toMember, t('groups.memberFallback'));
                   const createdAt = formatDate(payment.createdAt);
                   const paymentNote = getPaymentDisplayNote(payment);
                   return (
@@ -1930,7 +2062,7 @@ export default function GroupDetailsScreen() {
                         ) : null}
                       </View>
                       <View style={[styles.paymentStatusTag, styles.paymentStatusPending]}>
-                        <Text style={styles.paymentStatusText}>Pendiente</Text>
+                        <Text style={styles.paymentStatusText}>{t('groups.paymentStatusPending')}</Text>
                       </View>
                     </View>
                   );
@@ -1939,15 +2071,15 @@ export default function GroupDetailsScreen() {
             )}
 
             {pendingPayments.length === 0 && confirmedPayments.length === 0 && (
-              <Text style={styles.paymentEmptyText}>Aún no hay pagos registrados en este grupo.</Text>
+              <Text style={styles.paymentEmptyText}>{t('groups.noPayments')}</Text>
             )}
 
             {confirmedPayments.length > 0 && (
               <View style={styles.paymentSection}>
-                <Text style={styles.paymentSectionTitle}>Pagos confirmados recientes</Text>
+                <Text style={styles.paymentSectionTitle}>{t('groups.paymentsConfirmedRecent')}</Text>
                 {confirmedPayments.slice(0, 5).map((payment) => {
-                  const payerName = resolveMemberName(payment.fromMember, 'Miembro');
-                  const receiverName = resolveMemberName(payment.toMember, 'Miembro');
+                  const payerName = resolveMemberName(payment.fromMember, t('groups.memberFallback'));
+                  const receiverName = resolveMemberName(payment.toMember, t('groups.memberFallback'));
                   const createdAt = formatDate(payment.createdAt);
                   const paymentNote = getPaymentDisplayNote(payment);
                   return (
@@ -1963,7 +2095,7 @@ export default function GroupDetailsScreen() {
                       </View>
                       <View style={[styles.paymentStatusTag, styles.paymentStatusConfirmed]}>
                         <Ionicons name="checkmark-circle" size={16} color={palette.success} />
-                        <Text style={styles.paymentStatusText}>Confirmado</Text>
+                        <Text style={styles.paymentStatusText}>{t('groups.paymentStatusConfirmed')}</Text>
                       </View>
                     </View>
                   );
@@ -1975,7 +2107,7 @@ export default function GroupDetailsScreen() {
 
         {activeSection === 'payments' && pendingPayments.length === 0 && confirmedPayments.length === 0 && (
           <View style={styles.snapshotCard}>
-            <Text style={styles.emptyStateText}>Aún no hay pagos registrados en este grupo.</Text>
+          <Text style={styles.emptyStateText}>{t('groups.noPayments')}</Text>
           </View>
         )}
 
@@ -1987,7 +2119,7 @@ export default function GroupDetailsScreen() {
             style={styles.fabBackdrop}
             onPress={() => setShowFabMenu(false)}
             accessibilityRole="button"
-            accessibilityLabel="Cerrar menú flotante"
+            accessibilityLabel={t('groups.fabCloseMenu')}
           />
         )}
 
@@ -2002,12 +2134,12 @@ export default function GroupDetailsScreen() {
                   if (groupId) {
                     setShowCaptureReceiptModal(true);
                   } else {
-                    showAlert('Error', 'No se pudo detectar el grupo para capturar el recibo.');
+                    showAlert(t('common.error'), t('groups.captureReceiptError'));
                   }
                 }}
               >
                 <Ionicons name="receipt-outline" size={20} color={palette.primary} />
-                <Text style={styles.fabMenuLabel}>Capturar recibo</Text>
+                <Text style={styles.fabMenuLabel}>{t('groups.fabCaptureReceipt')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -2019,7 +2151,7 @@ export default function GroupDetailsScreen() {
                 }}
               >
                 <Ionicons name="person-add-outline" size={20} color={palette.primary} />
-                <Text style={styles.fabMenuLabel}>Invitar miembros</Text>
+                <Text style={styles.fabMenuLabel}>{t('groups.fabInviteMembers')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2029,7 +2161,7 @@ export default function GroupDetailsScreen() {
             style={[styles.fabButton, showFabMenu && styles.fabButtonActive]}
             onPress={() => setShowFabMenu((prev) => !prev)}
             accessibilityRole="button"
-            accessibilityLabel="Acciones rápidas"
+            accessibilityLabel={t('groups.fabQuickActions')}
           >
             <Ionicons
               name={showFabMenu ? 'close' : 'add'}
@@ -2046,6 +2178,16 @@ export default function GroupDetailsScreen() {
           visible={showInviteModal}
           onClose={() => setShowInviteModal(false)}
           groupData={groupDetails}
+        />
+      )}
+
+      {/* Modal de Gastos Recurrentes */}
+      {isPropertyGroup && groupDetails && groupId && (
+        <RecurringExpensesModal
+          visible={showRecurringModal}
+          onClose={() => setShowRecurringModal(false)}
+          groupId={Number(groupId)}
+          groupMembers={groupDetails.members as GroupMember[]}
         />
       )}
 
@@ -2130,14 +2272,14 @@ export default function GroupDetailsScreen() {
 
       <ConfirmDialog
         visible={!!memberToRemove}
-        title="Eliminar miembro"
+        title={t('groups.removeMemberTitle')}
         description={
           memberToRemove
-            ? `¿Estás seguro de que quieres eliminar a ${memberToRemove.name} del grupo?`
+            ? t('groups.removeMemberDesc', { name: memberToRemove.name })
             : undefined
         }
-        confirmLabel="Eliminar"
-        cancelLabel="Cancelar"
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         danger
         loading={removingMember}
         onCancel={() => {
@@ -2161,11 +2303,11 @@ export default function GroupDetailsScreen() {
         }}
         onSubmit={async ({ amount, note, paymentMethod, attachment }: PaymentFormSubmission) => {
           if (!groupDetails) {
-            throw new Error('Contexto de grupo no disponible');
+            throw new Error(t('groups.groupContextError'));
           }
 
           if (!currentUserId) {
-            throw new Error('Usuario actual no identificado');
+            throw new Error(t('groups.currentUserError'));
           }
 
           const payerId = modalRecipientId;
@@ -2181,7 +2323,7 @@ export default function GroupDetailsScreen() {
               paymentContext.expense.description ||
               paymentContext.expense.note ||
               paymentContext.expense.tag ||
-              `gasto #${paymentContext.expense.id}`;
+              `${t('groups.expenseFallback')} #${paymentContext.expense.id}`;
 
             structuredNote = {
               type: PAYMENT_NOTE_TYPE,
@@ -2225,7 +2367,7 @@ export default function GroupDetailsScreen() {
 
           setFeedback({
             type: 'success',
-            message: 'Pago registrado correctamente',
+            message: t('groups.paymentSuccess'),
           });
 
           setDeepLinkPaymentPrefill(null);

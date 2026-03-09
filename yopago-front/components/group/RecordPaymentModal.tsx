@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Colors, type AppPalette } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as ImagePicker from 'expo-image-picker';
@@ -70,16 +71,17 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
 
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(palette), [palette]);
   const placeholderColor = applyAlpha(palette.textMuted, 0.55);
 
   const paymentMethodOptions: Array<{ key: PaymentMethod; label: string; icon: keyof typeof Ionicons.glyphMap }> = useMemo(
     () => [
-      { key: 'transfer', label: 'Transferencia', icon: 'swap-horizontal-outline' },
-      { key: 'cash', label: 'Efectivo', icon: 'cash-outline' },
-      { key: 'other', label: 'Otro', icon: 'card-outline' },
+      { key: 'transfer', label: t('groups.paymentMethodLabelTransfer'), icon: 'swap-horizontal-outline' },
+      { key: 'cash', label: t('groups.paymentMethodLabelCash'), icon: 'cash-outline' },
+      { key: 'other', label: t('groups.paymentMethodLabelOther'), icon: 'card-outline' },
     ],
-    []
+    [t]
   );
 
   useEffect(() => {
@@ -114,7 +116,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       }
     } catch (error) {
       console.error('❌ Error seleccionando comprobante:', error);
-      Alert.alert('No se pudo abrir la galería', 'Intenta nuevamente o adjunta el comprobante manualmente.');
+      Alert.alert(t('groups.paymentGalleryError'), t('groups.paymentGalleryErrorMsg'));
     }
   };
 
@@ -123,7 +125,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     const value = parseFloat(sanitized);
 
     if (!Number.isFinite(value) || value <= 0) {
-      Alert.alert('Monto inválido', 'Ingresa un monto mayor a cero.');
+      Alert.alert(t('groups.paymentInvalidAmount'), t('groups.paymentInvalidAmountMsg'));
       return;
     }
 
@@ -138,7 +140,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       onClose();
     } catch (error) {
       console.error('❌ Error registrando pago:', error);
-      Alert.alert('Error', 'No se pudo registrar el pago. Intenta nuevamente.');
+      Alert.alert(t('common.error'), t('groups.paymentSubmitError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -161,7 +163,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       >
         <View style={styles.modalContainer}>
           <View style={styles.header}>
-            <Text style={styles.title}>Registrar pago</Text>
+            <Text style={styles.title}>{t('groups.paymentModalTitle')}</Text>
             <TouchableOpacity
               onPress={() => {
                 if (!isSubmitting) {
@@ -176,11 +178,11 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
 
           <View style={styles.content}>
             <Text style={styles.subtitle}>
-              Vas a enviar un pago a {payerName}.
+              {t('groups.paymentModalSubtitle', { name: payerName })}
             </Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Método de pago</Text>
+              <Text style={styles.label}>{t('groups.paymentMethodLabel')}</Text>
               <View style={styles.methodRow}>
                 {paymentMethodOptions.map((option) => {
                   const isActive = paymentMethod === option.key;
@@ -208,7 +210,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Monto a pagar</Text>
+              <Text style={styles.label}>{t('groups.paymentAmountLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={amount}
@@ -218,17 +220,17 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                 placeholderTextColor={placeholderColor}
               />
               <Text style={styles.helperText}>
-                Sugerido: ${amountSuggested.toFixed(2)}
+                {t('groups.paymentAmountSuggested', { amount: `$${amountSuggested.toFixed(2)}` })}
               </Text>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nota (opcional)</Text>
+              <Text style={styles.label}>{t('groups.paymentNoteLabel')}</Text>
               <TextInput
                 style={[styles.input, styles.noteInput]}
                 value={note}
                 onChangeText={setNote}
-                placeholder="Ej: Pago de mi parte del almuerzo"
+                placeholder={t('groups.paymentNotePlaceholder')}
                 placeholderTextColor={placeholderColor}
                 multiline
                 numberOfLines={3}
@@ -236,7 +238,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Comprobante (opcional)</Text>
+              <Text style={styles.label}>{t('groups.paymentReceiptLabel')}</Text>
               <TouchableOpacity
                 style={styles.attachmentButton}
                 onPress={pickAttachment}
@@ -244,7 +246,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
               >
                 <Ionicons name="attach-outline" size={16} color={palette.primary} style={styles.attachmentIcon} />
                 <Text style={styles.attachmentButtonText}>
-                  {attachment ? 'Cambiar comprobante' : 'Adjuntar imagen'}
+                  {attachment ? t('groups.paymentReceiptChange') : t('groups.paymentReceiptAttach')}
                 </Text>
               </TouchableOpacity>
 
@@ -258,20 +260,20 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                       {attachment.fileName ?? 'comprobante.jpg'}
                     </Text>
                     <Text style={styles.attachmentMeta}>
-                      {paymentMethod === 'cash' ? 'Confirmación de pago en efectivo' : 'Soporte de transferencia'}
+                      {paymentMethod === 'cash' ? t('groups.paymentReceiptCash') : t('groups.paymentReceiptTransfer')}
                     </Text>
                   </View>
                   <TouchableOpacity
                     onPress={() => setAttachment(null)}
                     style={styles.attachmentRemove}
-                    accessibilityLabel="Eliminar comprobante"
+                    accessibilityLabel={t('groups.paymentReceiptRemove')}
                   >
                     <Ionicons name="close" size={16} color={palette.text} />
                   </TouchableOpacity>
                 </View>
               ) : (
                 <Text style={styles.helperText}>
-                  Adjunta una foto del comprobante o deja que el receptor confirme manualmente.
+                  {t('groups.paymentReceiptHint')}
                 </Text>
               )}
             </View>
@@ -285,7 +287,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
             {isSubmitting ? (
               <ActivityIndicator color={palette.surface} />
             ) : (
-              <Text style={styles.submitButtonText}>Registrar pago</Text>
+              <Text style={styles.submitButtonText}>{t('groups.paymentSubmitBtn')}</Text>
             )}
           </TouchableOpacity>
         </View>

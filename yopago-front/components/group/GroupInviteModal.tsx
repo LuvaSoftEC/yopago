@@ -3,6 +3,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, type AppPalette } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import * as Clipboard from 'expo-clipboard';
+import { useTranslation } from 'react-i18next';
 import React, { useMemo } from 'react';
 import {
   Alert,
@@ -49,15 +50,16 @@ export default function GroupInviteModal({
 }: GroupInviteModalProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const palette = Colors[colorScheme];
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const copyCodeToClipboard = async () => {
     try {
       await Clipboard.setStringAsync(groupData.code);
-      Alert.alert('Copiado', 'Código copiado al portapapeles');
+      Alert.alert(t('groups.inviteCopied'), t('groups.inviteCopiedMsg'));
     } catch (error) {
       console.error('Error copying code:', error);
-      Alert.alert('Error', 'No se pudo copiar el código');
+      Alert.alert(t('common.error'), t('groups.inviteCopyError'));
     }
   };
 
@@ -114,7 +116,7 @@ export default function GroupInviteModal({
         });
       } catch (shareError) {
         console.error('Error using share menu:', shareError);
-        Alert.alert('No se pudo compartir', 'Intenta nuevamente más tarde o copia el código manualmente.');
+        Alert.alert(t('groups.inviteShareError'), t('groups.inviteShareErrorMsg'));
       }
     }
   };
@@ -132,16 +134,16 @@ export default function GroupInviteModal({
           <View style={styles.header}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Cerrar invitación"
+              accessibilityLabel={t('groups.inviteModalClose')}
               onPress={onClose}
               hitSlop={12}
               style={styles.closeButton}
             >
               <IconSymbol name="xmark" size={22} color={palette.textMuted} />
             </Pressable>
-            <Text style={styles.title}>Invitar al Grupo</Text>
+            <Text style={styles.title}>{t('groups.inviteModalTitle')}</Text>
             <Text style={styles.subtitle}>
-              Invita personas a &quot;{groupData.name}&quot;
+              {t('groups.inviteModalSubtitle', { name: groupData.name })}
             </Text>
           </View>
 
@@ -152,14 +154,14 @@ export default function GroupInviteModal({
               <Text style={styles.groupDescription}>{groupData.description}</Text>
             )}
             <View style={styles.groupStats}>
-              <Text style={styles.statItem}>👥 {groupData.totalMembers} miembros</Text>
-              <Text style={styles.statItem}>💰 {groupData.totalExpenses} gastos</Text>
+              <Text style={styles.statItem}>👥 {groupData.totalMembers} {t('groups.inviteModalMembers')}</Text>
+              <Text style={styles.statItem}>💰 {groupData.totalExpenses} {t('groups.inviteModalExpenses')}</Text>
             </View>
           </View>
 
           {/* Código QR */}
           <View style={styles.qrCard}>
-            <Text style={styles.qrTitle}>Código QR para unirse</Text>
+            <Text style={styles.qrTitle}>{t('groups.inviteQrTitle')}</Text>
             <View style={styles.qrContainer}>
               {groupData.qrCodeBase64 ? (
                 <Image
@@ -171,23 +173,23 @@ export default function GroupInviteModal({
                 <View style={styles.qrPlaceholder}>
                   <Text style={styles.qrPlaceholderText}>📱</Text>
                   <Text style={styles.qrPlaceholderSubtext}>
-                    QR no disponible
+                    {t('groups.inviteQrUnavailable')}
                   </Text>
                 </View>
               )}
             </View>
             <Text style={styles.qrInstructions}>
-              Los miembros pueden escanear este código para unirse al grupo
+              {t('groups.inviteQrHint')}
             </Text>
           </View>
 
           {/* Código de Invitación */}
           <View style={styles.codeCard}>
-            <Text style={styles.codeTitle}>Código de Invitación</Text>
+            <Text style={styles.codeTitle}>{t('groups.inviteCodeTitle')}</Text>
             <View style={styles.codeContainer}>
               <Text style={styles.codeText}>{groupData.code}</Text>
               <ThemedButton
-                title="Copiar"
+                title={t('groups.inviteCodeCopy')}
                 onPress={copyCodeToClipboard}
                 style={styles.copyButton}
                 textStyle={styles.copyButtonText}
@@ -195,14 +197,14 @@ export default function GroupInviteModal({
               />
             </View>
             <Text style={styles.codeInstructions}>
-              Comparte este código para que otros se unan manualmente
+              {t('groups.inviteCodeHint')}
             </Text>
           </View>
 
           {/* Botones de Acción */}
           <View style={styles.actionButtons}>
             <ThemedButton
-              title="� Compartir por WhatsApp"
+              title={t('groups.inviteWhatsapp')}
               onPress={shareGroupInvite}
               fullWidth
             />

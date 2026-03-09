@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { saveLanguagePreference } from '@/i18n/config';
 import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -46,6 +47,7 @@ export default function ProfileScreen() {
 
   const changeLanguage = useCallback(async (lng: string) => {
     await i18n.changeLanguage(lng);
+    await saveLanguagePreference(lng);
   }, [i18n]);
 
   const appearanceSummary = useMemo(() => {
