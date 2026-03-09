@@ -1,11 +1,16 @@
 import { Colors, type AppPalette } from '@/constants/theme';
+import { GROUP_TYPES, GROUP_TYPE_MAP, STORAGE_KEY_GROUP_TYPES, type GroupTypeId } from '@/constants/groupTypes';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, type Href } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Alert,
     KeyboardAvoidingView,
     Platform,
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -19,6 +24,7 @@ import GroupCreatedModal from './GroupCreatedModal';
 
 export default function CreateGroupForm() {
   const router = useRouter();
+  const { t } = useTranslation();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
@@ -26,6 +32,7 @@ export default function CreateGroupForm() {
     name: '',
     description: '',
   });
+  const [groupType, setGroupType] = useState<GroupTypeId>('general');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [createdGroup, setCreatedGroup] = useState<CreateGroupResponse | null>(null);
@@ -35,19 +42,30 @@ export default function CreateGroupForm() {
     const newErrors: { [key: string]: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'El nombre del grupo es obligatorio';
+      newErrors.name = t('createGroup.errorName');
     }
 
     if (formData.name.trim().length < 3) {
-      newErrors.name = 'El nombre debe tener al menos 3 caracteres';
+      newErrors.name = t('createGroup.nameTooShort');
     }
 
     if (formData.description && formData.description.length > 200) {
-      newErrors.description = 'La descripción no puede exceder 200 caracteres';
+      newErrors.description = t('createGroup.descriptionTooLong');
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const saveGroupType = async (groupId: number, type: GroupTypeId) => {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY_GROUP_TYPES);
+      const map: Record<string, GroupTypeId> = raw ? JSON.parse(raw) : {};
+      map[String(groupId)] = type;
+      await AsyncStorage.setItem(STORAGE_KEY_GROUP_TYPES, JSON.stringify(map));
+    } catch {
+      // Non-critical — type badge just won't show
+    }
   };
 
   const handleCreateGroup = async () => {
@@ -63,24 +81,25 @@ export default function CreateGroupForm() {
       };
 
       console.log('🔄 Sending group creation request:', groupRequest);
-      
-      const response = await authenticatedApiService.createGroup(groupRequest);
-      
-      console.log('✅ Grupo creado exitosamente:', response);
 
-      // Guardar los datos del grupo creado y mostrar el modal
+      const response = await authenticatedApiService.createGroup(groupRequest);
+
+      console.log('✅ Group created successfully:', response);
+
+      await saveGroupType(response.groupId, groupType);
+
       setCreatedGroup(response);
       setShowSuccessModal(true);
 
-      // Limpiar formulario
       setFormData({ name: '', description: '' });
+      setGroupType('general');
       setErrors({});
 
     } catch (error) {
-      console.error('❌ Error creando grupo:', error);
+      console.error('❌ Error creating group:', error);
       Alert.alert(
-        'Error',
-        error instanceof Error ? error.message : 'No se pudo crear el grupo'
+        t('common.error'),
+        error instanceof Error ? error.message : t('groups.createGroupError')
       );
     } finally {
       setLoading(false);
@@ -101,9 +120,9 @@ export default function CreateGroupForm() {
       setShowSuccessModal(false);
       router.push({
         pathname: '/(tabs)/group-details',
-        params: { 
+        params: {
           groupId: createdGroup.groupId,
-          groupName: createdGroup.name 
+          groupName: createdGroup.name
         }
       });
     }
@@ -111,27 +130,63 @@ export default function CreateGroupForm() {
 
   const handleGoToGroups = () => {
     setShowSuccessModal(false);
-  router.push('/(tabs)/my-groups' as Href);
+    router.push('/(tabs)/my-groups' as Href);
   };
 
+  const selectedType = GROUP_TYPE_MAP[groupType];
+
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Crear Nuevo Grupo</Text>
-          <Text style={styles.subtitle}>
-            Crea un grupo para compartir gastos con tus amigos
-          </Text>
+          <Text style={styles.title}>{t('groups.createGroupTitle')}</Text>
+          <Text style={styles.subtitle}>{t('groups.createGroupSubtitle')}</Text>
 
-          {/* Nombre del Grupo */}
+          {/* Group Type Selector */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Nombre del Grupo *</Text>
+            <Text style={styles.label}>{t('groups.groupType')}</Text>
+            <View style={styles.typeGrid}>
+              {GROUP_TYPES.map((type) => {
+                const isActive = groupType === type.id;
+                return (
+                  <Pressable
+                    key={type.id}
+                    style={[
+                      styles.typeChip,
+                      isActive && { borderColor: type.color, backgroundColor: type.color + '18' },
+                    ]}
+                    onPress={() => setGroupType(type.id)}
+                    disabled={loading}
+                  >
+                    <Ionicons
+                      name={type.icon}
+                      size={20}
+                      color={isActive ? type.color : palette.textMuted}
+                    />
+                    <Text
+                      style={[
+                        styles.typeChipLabel,
+                        { color: isActive ? type.color : palette.textMuted },
+                      ]}
+                    >
+                      {t(type.labelKey)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={styles.typeHint}>{t(selectedType.descriptionKey)}</Text>
+          </View>
+
+          {/* Group Name */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>{t('groups.groupName')} *</Text>
             <TextInput
               style={[styles.input, errors.name && styles.inputError]}
-              placeholder="Ej: Viaje a la playa"
+              placeholder={t('groups.groupNamePlaceholder')}
               placeholderTextColor={palette.textMuted}
               value={formData.name}
               onChangeText={(text) => {
@@ -147,12 +202,12 @@ export default function CreateGroupForm() {
             {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
           </View>
 
-          {/* Descripción */}
+          {/* Description */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Descripción (Opcional)</Text>
+            <Text style={styles.label}>{t('groups.descriptionOptional')}</Text>
             <TextInput
               style={[styles.input, styles.textArea, errors.description && styles.inputError]}
-              placeholder="Describe el propósito del grupo..."
+              placeholder={t('groups.descriptionPlaceholder')}
               placeholderTextColor={palette.textMuted}
               value={formData.description}
               onChangeText={(text) => {
@@ -173,10 +228,10 @@ export default function CreateGroupForm() {
             </Text>
           </View>
 
-          {/* Botones */}
+          {/* Buttons */}
           <View style={styles.buttonContainer}>
             <ThemedButton
-              title="Cancelar"
+              title={t('common.cancel')}
               onPress={handleCancel}
               disabled={loading}
               variant="secondary"
@@ -185,7 +240,7 @@ export default function CreateGroupForm() {
             />
 
             <ThemedButton
-              title="Crear Grupo"
+              title={t('groups.createGroup')}
               onPress={handleCreateGroup}
               loading={loading}
               disabled={loading || !formData.name.trim()}
@@ -196,7 +251,6 @@ export default function CreateGroupForm() {
         </View>
       </ScrollView>
 
-      {/* Modal de éxito */}
       {createdGroup && (
         <GroupCreatedModal
           visible={showSuccessModal}
@@ -209,6 +263,7 @@ export default function CreateGroupForm() {
     </KeyboardAvoidingView>
   );
 }
+
 function createStyles(palette: AppPalette) {
   return StyleSheet.create({
     container: {
@@ -251,6 +306,31 @@ function createStyles(palette: AppPalette) {
       fontWeight: '600',
       color: palette.text,
       marginBottom: palette.spacing.xs,
+    },
+    typeGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: palette.spacing.sm,
+    },
+    typeChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: palette.radius.pill,
+      borderWidth: 1.5,
+      borderColor: palette.divider,
+      backgroundColor: palette.surfaceAlt,
+    },
+    typeChipLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    typeHint: {
+      fontSize: 12,
+      color: palette.textMuted,
+      marginTop: palette.spacing.xs,
     },
     input: {
       borderWidth: 1,

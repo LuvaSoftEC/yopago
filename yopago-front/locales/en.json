@@ -134,7 +134,14 @@
     "unknownError": "Unknown error",
     "invalidGroupId": "Invalid group ID",
     "deleteIdentifyError": "Could not identify the group to delete.",
-    "deleteGroupError": "Could not delete the group. Please try again."
+    "deleteGroupError": "Could not delete the group. Please try again.",
+    "createGroupTitle": "Create New Group",
+    "createGroupSubtitle": "Create a group to share expenses with your friends",
+    "groupType": "Group Type",
+    "groupNamePlaceholder": "E.g.: Beach trip",
+    "descriptionOptional": "Description (Optional)",
+    "descriptionPlaceholder": "Describe the purpose of the group...",
+    "createGroupError": "Could not create the group"
   },
   "joinGroup": {
     "title": "Join a Group",
@@ -163,7 +170,9 @@
     "descriptionPlaceholder": "Describe the group's purpose",
     "createButton": "Create Group",
     "creating": "Creating...",
-    "errorName": "Group name is required"
+    "errorName": "Group name is required",
+    "nameTooShort": "Name must be at least 3 characters",
+    "descriptionTooLong": "Description cannot exceed 200 characters"
   },
   "wallet": {
     "title": "Wallet",
@@ -313,5 +322,15 @@
     "language": "Language",
     "languageDescription": "Change the app language",
     "selectLanguage": "Select language"
+  },
+  "groupTypes": {
+    "general": "General",
+    "generalDesc": "General shared expenses",
+    "empresa": "Company / Work",
+    "empresaDesc": "Employee travel and operations expenses",
+    "propiedad": "Property",
+    "propiedadDesc": "Co-owners of apartment or vacation home",
+    "evento": "Event / Trip",
+    "eventoDesc": "Weddings, group trips, celebrations"
   }
 }

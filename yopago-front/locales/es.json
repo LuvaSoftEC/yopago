@@ -134,7 +134,14 @@
     "unknownError": "Error desconocido",
     "invalidGroupId": "ID de grupo no válido",
     "deleteIdentifyError": "No se pudo identificar el grupo a eliminar.",
-    "deleteGroupError": "No se pudo eliminar el grupo. Intenta nuevamente."
+    "deleteGroupError": "No se pudo eliminar el grupo. Intenta nuevamente.",
+    "createGroupTitle": "Crear Nuevo Grupo",
+    "createGroupSubtitle": "Crea un grupo para compartir gastos con tus amigos",
+    "groupType": "Tipo de Grupo",
+    "groupNamePlaceholder": "Ej: Viaje a la playa",
+    "descriptionOptional": "Descripción (Opcional)",
+    "descriptionPlaceholder": "Describe el propósito del grupo...",
+    "createGroupError": "No se pudo crear el grupo"
   },
   "joinGroup": {
     "title": "Unirse a un Grupo",
@@ -163,7 +170,9 @@
     "descriptionPlaceholder": "Describe el propósito del grupo",
     "createButton": "Crear Grupo",
     "creating": "Creando...",
-    "errorName": "El nombre del grupo es obligatorio"
+    "errorName": "El nombre del grupo es obligatorio",
+    "nameTooShort": "El nombre debe tener al menos 3 caracteres",
+    "descriptionTooLong": "La descripción no puede exceder 200 caracteres"
   },
   "wallet": {
     "title": "Cartera",
@@ -313,5 +322,15 @@
     "language": "Idioma",
     "languageDescription": "Cambia el idioma de la aplicación",
     "selectLanguage": "Seleccionar idioma"
+  },
+  "groupTypes": {
+    "general": "General",
+    "generalDesc": "Gastos generales compartidos",
+    "empresa": "Empresa / Trabajo",
+    "empresaDesc": "Gastos de viajes y operaciones del equipo",
+    "propiedad": "Propiedad",
+    "propiedadDesc": "Copropietarios de apartamento o finca vacacional",
+    "evento": "Evento / Viaje",
+    "eventoDesc": "Bodas, viajes grupales, celebraciones"
   }
 }

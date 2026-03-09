@@ -2,6 +2,7 @@ import { ThemedView } from '@/components/themed-view';
 import { ThemedButton } from '@/components/ui/Button';
 import { Colors, type AppPalette } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useGroupTypesMap } from '@/hooks/use-group-types';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import type { ComponentProps } from 'react';
@@ -243,7 +244,9 @@ export default function GroupDetailsScreen() {
   }>();
 
   const groupId = Array.isArray(params.groupId) ? params.groupId[0] : params.groupId;
-  
+  const groupTypesMap = useGroupTypesMap([groupId]);
+  const currentGroupType = groupId ? groupTypesMap[groupId] : undefined;
+
   const [groupDetails, setGroupDetails] = useState<GroupDetailsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -1382,16 +1385,24 @@ export default function GroupDetailsScreen() {
             </View>
 
             <View style={styles.headerMetaRow}>
-              <View style={[styles.headerMetaBadge, { borderColor: applyAlpha(palette.text, 0.12) }]}> 
+              <View style={[styles.headerMetaBadge, { borderColor: applyAlpha(palette.text, 0.12) }]}>
                 <Text style={[styles.headerMetaBadgeLabel, { color: palette.textMuted }]}>Código</Text>
                 <Text style={[styles.headerMetaBadgeValue, { color: palette.success }]}>{groupDetails.code}</Text>
               </View>
-              <View style={[styles.headerMetaBadge, { borderColor: applyAlpha(palette.text, 0.12) }]}> 
+              <View style={[styles.headerMetaBadge, { borderColor: applyAlpha(palette.text, 0.12) }]}>
                 <Text style={[styles.headerMetaBadgeLabel, { color: palette.textMuted }]}>Creado</Text>
                 <Text style={[styles.headerMetaBadgeValue, { color: palette.textMuted }]}>
                   {formatDate(groupDetails.createdAt)}
                 </Text>
               </View>
+              {currentGroupType && currentGroupType.id !== 'general' && (
+                <View style={[styles.headerMetaBadge, { borderColor: currentGroupType.color, backgroundColor: currentGroupType.color + '18' }]}>
+                  <Ionicons name={currentGroupType.icon} size={12} color={currentGroupType.color} />
+                  <Text style={[styles.headerMetaBadgeValue, { color: currentGroupType.color }]}>
+                    {currentGroupType.label}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </ThemedView>

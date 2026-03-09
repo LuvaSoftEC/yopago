@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeightDebug } from '@/hooks/use-header-height-debug';
+import { useGroupTypesMap } from '@/hooks/use-group-types';
 import { useRealTime } from '@/contexts/RealTimeContext';
 
 const applyAlpha = (hexColor: string, alpha: number) => {
@@ -64,6 +65,7 @@ function MisGruposContent() {
 
 	const authenticatedApiService = useAuthenticatedApiService();
 	const { subscribeToUserEvents, subscribeToGroupEvents } = useRealTime();
+	const groupTypesMap = useGroupTypesMap([groups.length]);
 	const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const loadGroupsRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -576,6 +578,18 @@ function MisGruposContent() {
 										<ThemedText variant="label" style={styles.groupMemberCount}>
 											👥 {group.memberCount} {group.memberCount === 1 ? t('groups.member') : t('groups.members')}
 										</ThemedText>
+										{(() => {
+											const gt = groupTypesMap[String(group.groupId)];
+											if (!gt || gt.id === 'general') return null;
+											return (
+												<View style={[styles.groupTypeBadge, { borderColor: gt.color, backgroundColor: gt.color + '18' }]}>
+													<Ionicons name={gt.icon} size={11} color={gt.color} />
+													<ThemedText variant="label" style={[styles.groupTypeBadgeLabel, { color: gt.color }]}>
+														{t(gt.labelKey)}
+													</ThemedText>
+												</View>
+											);
+										})()}
 									</View>
 
 									<View style={styles.groupHeaderActions}>
@@ -935,6 +949,21 @@ const createStyles = (palette: AppPalette) =>
 		groupMemberCount: {
 			color: palette.textMuted,
 			fontSize: 14,
+		},
+		groupTypeBadge: {
+			flexDirection: 'row',
+			alignItems: 'center',
+			gap: 4,
+			alignSelf: 'flex-start',
+			paddingVertical: 2,
+			paddingHorizontal: 7,
+			borderRadius: palette.radius.pill,
+			borderWidth: 1,
+			marginTop: 4,
+		},
+		groupTypeBadgeLabel: {
+			fontSize: 11,
+			fontWeight: '600',
 		},
 		groupExpenses: {
 			alignItems: 'flex-end',
