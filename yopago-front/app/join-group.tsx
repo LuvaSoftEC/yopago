@@ -26,7 +26,7 @@ export default function JoinGroupScreen() {
 
     setIsLoading(true);
     try {
-      console.log('🔗 Intentando unirse al grupo...');
+      console.log('🔗 Attempting to join group...');
       const result = await authenticatedApi.joinGroup(joinCode.trim());
 
       console.log('✅ Resultado:', result);
@@ -34,7 +34,7 @@ export default function JoinGroupScreen() {
 
       const groupId = typeof result?.id === 'number' ? result.id : Number(result?.id);
       if (!Number.isFinite(groupId)) {
-        throw new Error('Respuesta inválida: no se pudo determinar el grupo');
+        throw new Error('Invalid response: could not determine the group');
       }
 
       if (result.alreadyMember) {

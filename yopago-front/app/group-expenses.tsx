@@ -46,7 +46,7 @@ const applyAlpha = (hexColor: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-// Componente interno para mostrar los gastos
+// Internal component to display expenses
 function GroupExpensesContent() {
   const router = useRouter();
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
@@ -62,7 +62,7 @@ function GroupExpensesContent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [group, setGroup] = useState<any>(null);
 
-  // Estados para crear gasto
+  // State for creating expense
   const [newExpense, setNewExpense] = useState({
     description: '',
     amount: '',
@@ -74,17 +74,17 @@ function GroupExpensesContent() {
   const loadGroupData = useCallback(async () => {
     const numericGroupId = Number(groupId);
     if (!numericGroupId || Number.isNaN(numericGroupId)) {
-      console.warn('groupId inválido, no se puede cargar el grupo');
+      console.warn('Invalid groupId, cannot load group');
       return;
     }
 
     try {
-      console.log('🔍 Cargando datos del grupo:', numericGroupId);
+      console.log('🔍 Loading group data:', numericGroupId);
       const groupDetails = await authenticatedApiService.getGroupDetails(numericGroupId);
       setGroup(groupDetails);
-      console.log('✅ Datos del grupo cargados:', groupDetails);
+      console.log('✅ Group data loaded:', groupDetails);
     } catch (error) {
-      console.error('❌ Error cargando datos del grupo:', error);
+      console.error('❌ Error loading group data:', error);
       Alert.alert('Error', 'No se pudieron cargar los datos del grupo');
     }
   }, [authenticatedApiService, groupId]);
@@ -96,14 +96,14 @@ function GroupExpensesContent() {
 
     try {
       setIsLoading(true);
-      console.log('💰 Cargando gastos del grupo:', groupId);
+      console.log('💰 Loading group expenses:', groupId);
       
       const groupExpenses = await authenticatedApiService.getGroupExpenses(groupId);
       setExpenses(groupExpenses);
-      console.log('✅ Gastos cargados:', groupExpenses);
+      console.log('✅ Expenses loaded:', groupExpenses);
       
     } catch (error) {
-      console.error('❌ Error cargando gastos:', error);
+      console.error('❌ Error loading expenses:', error);
       Alert.alert('Error', 'No se pudieron cargar los gastos del grupo');
     } finally {
       setIsLoading(false);
@@ -137,9 +137,9 @@ function GroupExpensesContent() {
 
     try {
       setIsCreating(true);
-      console.log('💰 Creando nuevo gasto...');
+      console.log('💰 Creating new expense...');
 
-      // Encontrar el ID del usuario actual en la lista de miembros del grupo
+      // Find current user's ID in group member list
       const currentUserMember = group?.members?.find((member: any) => 
         member.email === user?.email || member.name === user?.username
       );
@@ -158,15 +158,15 @@ function GroupExpensesContent() {
         divisionType: newExpense.divisionType,
       } as any;
 
-      console.log('📤 Enviando solicitud de gasto:', expenseRequest);
+      console.log('📤 Sending expense request:', expenseRequest);
 
       const createdExpense = await authenticatedApiService.createExpense(expenseRequest);
-      console.log('✅ Gasto creado exitosamente:', createdExpense);
+      console.log('✅ Expense created successfully:', createdExpense);
 
-      // Actualizar la lista de gastos
+      // Update expenses list
       await loadExpenses();
 
-      // Cerrar modal y limpiar formulario
+      // Close modal and clear form
       setShowCreateModal(false);
       setNewExpense({
         description: '',
@@ -178,7 +178,7 @@ function GroupExpensesContent() {
       Alert.alert('Éxito', 'Gasto creado exitosamente');
 
     } catch (error) {
-      console.error('❌ Error creando gasto:', error);
+      console.error('❌ Error creating expense:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Error al crear el gasto');
     } finally {
       setIsCreating(false);

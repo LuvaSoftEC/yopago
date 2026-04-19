@@ -25,7 +25,7 @@ public class AuthService {
     @Value("${keycloak.resource:yopago-api}")
     private String clientId;
 
-    @Value("${keycloak.credentials.secret:LDhFgHxG9G487snNRZyWK3PPWThdDw2b}")
+    @Value("${keycloak.credentials.secret}")
     private String clientSecret;
 
     @Value("${keycloak.auth-server-url}")
@@ -40,7 +40,7 @@ public class AuthService {
     @Value("${keycloak.admin.username:admin}")
     private String adminUsername;
 
-    @Value("${keycloak.admin.password:admin123}")
+    @Value("${keycloak.admin.password}")
     private String adminPassword;
 
     @Value("${app.frontend.base-url:http://localhost:8080}")

@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopago-backend
+  namespace: yopago
+  labels:
+    app: yopago-backend
+    app.kubernetes.io/name: yopago-backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: yopago
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yopago-backend
+  template:
+    metadata:
+      labels:
+        app: yopago-backend
+        app.kubernetes.io/name: yopago-backend
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: yopago
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: backend
+          # Reemplaza <YOUR_ACR_NAME> con el nombre de tu Azure Container Registry
+          # Ej: yopagoacr.azurecr.io/yopago-backend:latest
+          image: <YOUR_ACR_NAME>.azurecr.io/yopago-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "default"
+            # DB_URL: host completo desde Azure Portal → tu-servidor.postgres.database.azure.com
+            - name: DB_URL
+              value: "jdbc:postgresql://<YOUR_AZURE_DB_HOST>.postgres.database.azure.com:5432/yopago?sslmode=require"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: yopago-db
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: yopago-db
+                  key: DB_PASS
+            - name: DB_DRIVER
+              value: "org.postgresql.Driver"
+            - name: HIBERNATE_DDL
+              value: "update"
+            - name: SHOW_SQL
+              value: "false"
+            - name: HIBERNATE_DIALECT
+              value: "org.hibernate.dialect.PostgreSQLDialect"
+            - name: APP_NAME
+              value: "yopago"
+            - name: VISION_IA_SERVICE_BASE_URL
+              value: "http://vision-ia:8001"
+            - name: KEYCLOAK_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: yopago-config
+                  key: KC_HOSTNAME_URL
+            - name: KEYCLOAK_INTERNAL_URL
+              value: "http://keycloak:8080"
+            - name: KEYCLOAK_AUTH_SERVER_URL
+              value: "http://keycloak:8080"
+            - name: KEYCLOAK_CREDENTIALS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-client
+                  key: KEYCLOAK_CLIENT_SECRET
+            - name: KEYCLOAK_ADMIN_REALM
+              value: "master"
+            - name: KEYCLOAK_ADMIN_USERNAME
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: APP_FRONTEND_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: yopago-config
+                  key: APP_FRONTEND_BASE_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yopago-backend
+  namespace: yopago
+  labels:
+    app: yopago-backend
+    app.kubernetes.io/name: yopago-backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: yopago
+spec:
+  type: ClusterIP
+  selector:
+    app: yopago-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

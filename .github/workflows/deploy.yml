@@ -1,0 +1,91 @@
+name: 2 - Deploy to AKS
+
+on:
+  # Se dispara automáticamente cuando el build termina con éxito
+  workflow_run:
+    workflows: ["1 - Build & Push to ACR"]
+    types: [completed]
+    branches: [dev, test, main]
+  # También permite ejecución manual desde GitHub UI
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to AKS
+    runs-on: ubuntu-latest
+
+    # Solo ejecuta si el build fue exitoso (o si es manual)
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    # GitHub Environment: mapea rama → entorno
+    # Configura los secrets en: Settings → Environments → dev / test / prod
+    environment: ${{ github.ref_name == 'main' && 'prod' || github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Autenticación Azure ─────────────────────────────────────────────
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # ── Contexto kubectl → AKS ──────────────────────────────────────────
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      # ── Namespace ───────────────────────────────────────────────────────
+      - name: Apply Namespace
+        run: kubectl apply -f infra/k8s/azure/namespace.yaml
+
+      # ── ConfigMap ───────────────────────────────────────────────────────
+      - name: Apply ConfigMap
+        run: kubectl apply -f infra/k8s/azure/configmap.yaml -n ${{ secrets.K8S_NAMESPACE }}
+
+      # ── Secrets ─────────────────────────────────────────────────────────
+      # Usa --dry-run=client | kubectl apply para crear O actualizar
+      - name: Create/Update Secrets
+        run: |
+          kubectl create secret generic yopago-db \
+            --from-literal=DB_USER=${{ secrets.DB_USER }} \
+            --from-literal=DB_PASS=${{ secrets.POSTGRES_PASSWORD }} \
+            -n ${{ secrets.K8S_NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create secret generic keycloak-admin \
+            --from-literal=KEYCLOAK_ADMIN_PASSWORD=${{ secrets.KEYCLOAK_ADMIN_PASSWORD }} \
+            -n ${{ secrets.K8S_NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create secret generic keycloak-client \
+            --from-literal=KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }} \
+            -n ${{ secrets.K8S_NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create secret generic vision-ia-openai \
+            --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            -n ${{ secrets.K8S_NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      # ── Deploy manifiestos ───────────────────────────────────────────────
+      - name: Deploy to AKS
+        uses: azure/k8s-deploy@v5
+        with:
+          namespace: ${{ secrets.K8S_NAMESPACE }}
+          manifests: |
+            infra/k8s/azure/backend.yaml
+            infra/k8s/azure/frontend.yaml
+            infra/k8s/azure/keycloak.yaml
+            infra/k8s/azure/vision-ia.yaml
+            infra/k8s/azure/ingress.yaml
+
+      # ── Verificar estado del deploy ─────────────────────────────────────
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/yopago-backend  -n ${{ secrets.K8S_NAMESPACE }} --timeout=120s
+          kubectl rollout status deployment/yopago-frontend -n ${{ secrets.K8S_NAMESPACE }} --timeout=120s
+          kubectl rollout status deployment/yopago-keycloak -n ${{ secrets.K8S_NAMESPACE }} --timeout=180s
+          kubectl rollout status deployment/yopago-vision-ia -n ${{ secrets.K8S_NAMESPACE }} --timeout=60s

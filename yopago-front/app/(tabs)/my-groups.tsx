@@ -42,7 +42,7 @@ const applyAlpha = (hexColor: string, alpha: number) => {
 };
 
 function MisGruposContent() {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const [groups, setGroups] = useState<GroupSummary[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
@@ -106,7 +106,7 @@ function MisGruposContent() {
 						typeof rawGroupId === 'number' ? rawGroupId : Number(rawGroupId);
 
 					if (!Number.isFinite(numericGroupId)) {
-						console.warn('⚠️ Omitiendo grupo sin identificador válido:', group);
+						console.warn('⚠️ Skipping group without valid identifier:', group);
 						return acc;
 					}
 
@@ -172,7 +172,7 @@ function MisGruposContent() {
 
 					acc.push({
 						groupId: numericGroupId,
-						name: group.name || 'Grupo sin nombre',
+						name: group.name || t('groups.noName'),
 						memberCount: memberCountValue,
 						totalExpenses: totalExpensesCount,
 						totalAmount,
@@ -190,13 +190,13 @@ function MisGruposContent() {
 			console.log('🔄 [MyGroups] Estado de grupos actualizado');
 		} catch (error) {
 			console.error('❌ [MyGroups] Error cargando grupos:', error);
-			showAlert('Error', error instanceof Error ? error.message : 'Error desconocido');
+			showAlert(t('common.error'), error instanceof Error ? error.message : t('groups.unknownError'));
 		} finally {
 			if (!silent) {
 				setIsLoading(false);
 			}
 		}
-	}, [authenticatedApiService, showAlert]);
+	}, [authenticatedApiService, showAlert, t]);
 
 	// Mantener la referencia actualizada de loadGroups
 	useEffect(() => {
@@ -275,29 +275,29 @@ function MisGruposContent() {
 		};
 	}, [currentMemberId, scheduleReload, subscribeToUserEvents]);
 
-	// Suscribirse a eventos de cada grupo (gastos, pagos, miembros)
+	// Subscribe to events for each group (expenses, payments, members)
 	useEffect(() => {
-		console.log('🔍 [MyGroups] useEffect de suscripción ejecutado, grupos:', groups.length);
-		
+		console.log('🔍 [MyGroups] subscription useEffect executed, groups:', groups.length);
+
 		if (!groups.length) {
-			console.log('⚠️ [MyGroups] No hay grupos para suscribirse');
+			console.log('⚠️ [MyGroups] No groups to subscribe to');
 			return undefined;
 		}
 
-		console.log(`📡 [MyGroups] Suscribiéndose a ${groups.length} grupos:`, groups.map(g => g.groupId));
+		console.log(`📡 [MyGroups] Subscribing to ${groups.length} groups:`, groups.map(g => g.groupId));
 		const unsubscribers: (() => void)[] = [];
 
 		groups.forEach((group) => {
-			console.log(`🔌 [MyGroups] Suscribiéndose al grupo ${group.groupId} (${group.name})`);
+			console.log(`🔌 [MyGroups] Subscribing to group ${group.groupId} (${group.name})`);
 			const unsubscribe = subscribeToGroupEvents(group.groupId, (event) => {
-				console.log(`📨 [MyGroups] Evento recibido del grupo ${group.groupId}:`, event);
-				
+				console.log(`📨 [MyGroups] Event received from group ${group.groupId}:`, event);
+
 				if (!event || typeof event.type !== 'string') {
-					console.warn(`⚠️ [MyGroups] Evento sin tipo del grupo ${group.groupId}:`, event);
+					console.warn(`⚠️ [MyGroups] Event without type from group ${group.groupId}:`, event);
 					return;
 				}
 
-				// Actualizar cuando hay cambios en gastos, pagos o miembros
+				// Update when there are changes in expenses, payments or members
 				if (
 					event.type === 'group.expense.created' ||
 					event.type === 'group.expense.updated' ||
@@ -307,10 +307,10 @@ function MisGruposContent() {
 					event.type === 'group.member.added' ||
 					event.type === 'group.member.removed'
 				) {
-					console.log(`✅ [MyGroups] Evento válido en grupo ${group.groupId} (${group.name}):`, event.type);
+					console.log(`✅ [MyGroups] Valid event in group ${group.groupId} (${group.name}):`, event.type);
 					scheduleReload();
 				} else {
-					console.log(`ℹ️ [MyGroups] Evento ignorado del grupo ${group.groupId}:`, event.type);
+					console.log(`ℹ️ [MyGroups] Ignored event from group ${group.groupId}:`, event.type);
 				}
 			});
 
@@ -320,7 +320,7 @@ function MisGruposContent() {
 		});
 
 		return () => {
-			console.log(`🔌 [MyGroups] Desuscribiéndose de ${unsubscribers.length} grupos`);
+			console.log(`🔌 [MyGroups] Unsubscribing from ${unsubscribers.length} groups`);
 			unsubscribers.forEach((unsub) => {
 				if (typeof unsub === 'function') {
 					unsub();
@@ -367,7 +367,7 @@ function MisGruposContent() {
 
 		if (!groupId) {
 			console.error('❌ GroupId es undefined o null');
-			showAlert('Error', 'ID de grupo no válido');
+			showAlert(t('common.error'), t('groups.invalidGroupId'));
 			return;
 		}
 
@@ -390,8 +390,8 @@ function MisGruposContent() {
 				const numericGroupId = Number(groupId);
 
 				if (!Number.isFinite(numericGroupId)) {
-					console.warn('⚠️ ID de grupo inválido, no se puede eliminar:', groupId);
-				setDeleteError('No se pudo identificar el grupo a eliminar.');
+					console.warn('⚠️ Invalid group ID, cannot delete:', groupId);
+				setDeleteError(t('groups.deleteIdentifyError'));
 				return false;
 				}
 
@@ -408,14 +408,14 @@ function MisGruposContent() {
 				setDeleteError(
 					error instanceof Error && error.message
 						? error.message
-						: 'No se pudo eliminar el grupo. Intenta nuevamente.'
+						: t('groups.deleteGroupError')
 				);
 				return false;
 			} finally {
 				setDeletingGroupId(null);
 			}
 		},
-		[authenticatedApiService]
+		[authenticatedApiService, t]
 	);
 
 	const confirmDeleteGroup = useCallback((group: GroupSummary) => {
@@ -449,7 +449,7 @@ function MisGruposContent() {
 		return (
 			<View style={[styles.container, styles.centered]}>
 				<ActivityIndicator size="large" color={palette.primary} />
-				<ThemedText style={styles.loadingText}>Cargando tus grupos...</ThemedText>
+				<ThemedText style={styles.loadingText}>{t('groups.loadingGroups')}</ThemedText>
 			</View>
 		);
 	}
@@ -479,7 +479,7 @@ function MisGruposContent() {
 						style={styles.headerActionButton}
 						onPress={onRefresh}
 						accessibilityRole="button"
-						accessibilityLabel="Actualizar grupos"
+						accessibilityLabel={t('groups.refreshLabel')}
 						hitSlop={12}
 					>
 						<Ionicons name="notifications-outline" size={20} color={palette.text} />
@@ -495,7 +495,7 @@ function MisGruposContent() {
 					/>
 					<TextInput
 						style={styles.searchInput}
-						placeholder="Buscar por nombre o código"
+						placeholder={t('groups.searchByNameOrCode')}
 						placeholderTextColor={applyAlpha(palette.textMuted, 0.6)}
 						value={searchTerm}
 						onChangeText={setSearchTerm}
@@ -509,7 +509,7 @@ function MisGruposContent() {
 						<Pressable
 							onPress={() => setSearchTerm('')}
 							accessibilityRole="button"
-							accessibilityLabel="Limpiar búsqueda"
+							accessibilityLabel={t('groups.clearSearch')}
 							style={styles.clearSearchButton}
 							hitSlop={12}
 						>
@@ -539,7 +539,7 @@ function MisGruposContent() {
 							activeOpacity={0.8}
 						>
 							<ThemedText variant="label" weight="semiBold" style={styles.emptyActionButtonText}>
-								Crear mi primer grupo
+								{t('groups.createGroup')}
 							</ThemedText>
 						</TouchableOpacity>
 					</View>
@@ -547,10 +547,10 @@ function MisGruposContent() {
 					<View style={styles.noMatches}>
 						<Ionicons name="search" size={28} color={palette.textMuted} />
 						<ThemedText variant="headline" weight="semiBold" style={styles.noMatchesTitle}>
-							Sin coincidencias
+							{t('groups.noMatches')}
 						</ThemedText>
 						<ThemedText variant="label" style={styles.noMatchesSubtitle}>
-						Ajusta tu búsqueda o limpia el filtro para ver todos tus grupos.
+						{t('groups.noMatchesSubtitle')}
 					</ThemedText>
 				</View>
 			) : (
@@ -594,7 +594,7 @@ function MisGruposContent() {
 													isDeleting && styles.groupMenuButtonDisabled,
 												]}
 												accessibilityRole="button"
-												accessibilityLabel={`Opciones para ${group.name}`}
+												accessibilityLabel={t('groups.optionsFor', { name: group.name })}
 												hitSlop={14}
 											>
 												{isDeleting ? (
@@ -614,7 +614,7 @@ function MisGruposContent() {
 											<ThemedText variant="title" weight="bold" style={styles.expenseAmount}>
 												{formatCurrency(group.totalAmount)}
 											</ThemedText>
-											<ThemedText variant="label" style={styles.expenseLabel}>Total gastos</ThemedText>
+											<ThemedText variant="label" style={styles.expenseLabel}>{t('groups.totalExpenses')}</ThemedText>
 										</View>
 									</View>
 								</View>
@@ -622,7 +622,7 @@ function MisGruposContent() {
 								<View style={styles.groupCardFooter}>
 									<ThemedText variant="label" style={styles.lastActivity}>
 										{group.lastActivity && (
-											`Última actividad: ${new Date(group.lastActivity).toLocaleDateString('es-ES')}`
+											t('groups.lastActivity', { date: new Date(group.lastActivity).toLocaleDateString(i18n.language) })
 										)}
 									</ThemedText>
 
@@ -640,7 +640,7 @@ function MisGruposContent() {
 												group.userRole === 'admin' && styles.roleTextAdmin,
 											]}
 										>
-											{group.userRole === 'admin' ? 'Administrador' : 'Miembro'}
+											{group.userRole === 'admin' ? t('groups.roleAdmin') : t('groups.roleMember')}
 										</ThemedText>
 									</View>
 								</View>
@@ -668,7 +668,7 @@ function MisGruposContent() {
 										>
 											<Ionicons name="trash" size={18} color={palette.warning} />
 											<ThemedText variant="label" weight="semiBold" style={styles.groupMenuItemText}>
-												Eliminar grupo
+												{t('groups.deleteMenuLabel')}
 											</ThemedText>
 										</Pressable>
 									</View>
@@ -707,7 +707,7 @@ function MisGruposContent() {
 				onPress={() => setShowFabMenu((prev) => !prev)}
 				accessibilityRole="button"
 				accessibilityLabel={
-					showFabMenu ? 'Cerrar acciones rápidas de grupos' : 'Abrir acciones rápidas de grupos'
+					showFabMenu ? t('groups.closeQuickActions') : t('groups.openQuickActions')
 				}
 				hitSlop={12}
 			>
@@ -720,14 +720,14 @@ function MisGruposContent() {
 
 			<ConfirmDialog
 				visible={isDeleteDialogOpen && !!groupPendingDeletion}
-				title="Eliminar grupo"
+				title={t('groups.deleteGroup')}
 				description={
 					groupPendingDeletion
-						? `¿Estás seguro de que quieres eliminar el grupo ${groupPendingDeletion.name}? Esta acción no se puede deshacer.`
+						? t('groups.deleteConfirmFull', { name: groupPendingDeletion.name })
 						: undefined
 				}
-				confirmLabel="Eliminar"
-				cancelLabel="Cancelar"
+				confirmLabel={t('common.delete')}
+				cancelLabel={t('common.cancel')}
 				danger
 				loading={isDeleteLoading}
 				errorMessage={deleteError ?? undefined}

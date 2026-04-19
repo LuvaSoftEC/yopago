@@ -1,0 +1,71 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yopago-ingress
+  namespace: yopago
+  labels:
+    app.kubernetes.io/part-of: yopago
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$binary_remote_addr"
+    # TLS — descomentar cuando tengas cert-manager instalado en AKS
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  rules:
+    # ── Aplicación principal ─────────────────────────────────────────────
+    # Reemplaza <YOUR_DOMAIN> (ej: yopago.example.com)
+    - host: <YOUR_DOMAIN>
+      http:
+        paths:
+          # WebSocket — debe ir ANTES de /api
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: yopago-backend
+                port:
+                  number: 8080
+
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: yopago-backend
+                port:
+                  number: 8080
+
+          # Frontend — raíz del dominio
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: yopago-frontend
+                port:
+                  number: 80
+
+    # ── Keycloak (subdominio de autenticación) ───────────────────────────
+    # Reemplaza auth.<YOUR_DOMAIN> (ej: auth.yopago.example.com)
+    # KC_HOSTNAME en configmap.yaml debe coincidir con este valor
+    - host: auth.<YOUR_DOMAIN>
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
+
+  # TLS — descomentar cuando tengas cert-manager instalado
+  # tls:
+  #   - hosts:
+  #       - <YOUR_DOMAIN>
+  #       - auth.<YOUR_DOMAIN>
+  #     secretName: yopago-tls

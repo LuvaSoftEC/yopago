@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   bdd:
-    build: ./bdd
+    image: postgres:15
     container_name: yopago-bdd
     environment:
       POSTGRES_USER: postgres
@@ -11,6 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./bdd/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
 
   keycloak:
     build: ./keycloak/local

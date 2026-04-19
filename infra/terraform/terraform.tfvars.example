@@ -1,0 +1,26 @@
+# ============================================================
+# EJEMPLO DE VARIABLES — NO SUBIR AL REPOSITORIO
+# ============================================================
+# Copia este archivo:
+#   cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars ya está en .gitignore
+# ============================================================
+
+# ── Generales ─────────────────────────────────────────────────────────────────
+project_name        = "yopago"
+environment         = "dev"             # dev | test | prod
+location            = "eastus2"
+resource_group_name = "yopago-dev-rg"
+
+# ── AKS ───────────────────────────────────────────────────────────────────────
+kubernetes_version  = "1.29"
+aks_node_count      = 1                 # 1 nodo es suficiente para el curso
+aks_node_vm_size    = "Standard_B2s"    # 2 vCPU / 4 GB RAM
+aks_os_disk_size_gb = 30
+
+# ── PostgreSQL ─────────────────────────────────────────────────────────────────
+postgres_admin_user     = "yopagoadmin"
+postgres_admin_password = "Cambia@Este1Password!"  # ← cambia esto
+postgres_sku            = "B_Standard_B1ms"         # ~$12/mes (dev/curso)
+postgres_storage_mb     = 32768                     # 32 GB (mínimo)
+postgres_version        = "15"

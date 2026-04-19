@@ -1,0 +1,11 @@
+.vscode
+# El secrets.yaml contiene credenciales reales — nunca debe subirse al repo
+local/k8s/secrets.yaml
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/crash.log

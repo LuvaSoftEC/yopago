@@ -16,6 +16,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ExpoLinking from "expo-linking";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { Card } from "@/components/ui/Card";
@@ -78,12 +79,7 @@ type PersonBreakdown = {
   settlements: SettlementEntry[];
 };
 
-const DATE_RANGE_OPTIONS: { key: DateRangeOption; label: string }[] = [
-  { key: "all", label: "Todo el tiempo" },
-  { key: "7d", label: "Últimos 7 días" },
-  { key: "30d", label: "Últimos 30 días" },
-  { key: "custom", label: "Personalizado" },
-];
+type TFunction = (key: string, options?: Record<string, unknown>) => string;
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
@@ -104,6 +100,7 @@ type RefreshOptions = {
 };
 
 export default function BalanceScreen() {
+  const { t } = useTranslation();
   const scheme = useColorScheme() ?? "light";
   const palette = Colors[scheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
@@ -162,13 +159,23 @@ export default function BalanceScreen() {
 
   const totals = useMemo(() => computeTotals(groupBreakdown), [groupBreakdown, computeTotals]);
 
+  const dateRangeOptions = useMemo(
+    () => [
+      { key: "all" as DateRangeOption, label: t("wallet.allTime") },
+      { key: "7d" as DateRangeOption, label: t("wallet.last7Days") },
+      { key: "30d" as DateRangeOption, label: t("wallet.last30Days") },
+      { key: "custom" as DateRangeOption, label: t("wallet.custom") },
+    ],
+    [t]
+  );
+
   const netFlowText = useMemo(() => {
-    return `Tú debes ${formatCurrency(totals.youOwe)} — Te deben ${formatCurrency(totals.owedToYou)}`;
-  }, [formatCurrency, totals.owedToYou, totals.youOwe]);
+    return t("wallet.netFlow", { youOwe: formatCurrency(totals.youOwe), owedToYou: formatCurrency(totals.owedToYou) });
+  }, [formatCurrency, t, totals.owedToYou, totals.youOwe]);
   const netIsPositive = totals.net >= 0;
 
   const hasActiveFilters = filters.groupId !== "all" || filters.dateRange !== "all";
-  const filterSummary = useMemo(() => buildFilterSummary(filters, rawGroups), [filters, rawGroups]);
+  const filterSummary = useMemo(() => buildFilterSummary(filters, rawGroups, t), [filters, rawGroups, t]);
 
   const loadBalance = useCallback(async ({ silent }: RefreshOptions = {}) => {
     setError(null);
@@ -431,12 +438,12 @@ export default function BalanceScreen() {
       const end = parseDateInput(customDraft.end);
 
       if (!start || !end) {
-        Alert.alert("Rango inválido", "Ingresa fechas válidas con formato AAAA-MM-DD.");
+        Alert.alert(t("wallet.invalidRange"), t("wallet.invalidDatesFormat"));
         return;
       }
 
       if (start.getTime() > end.getTime()) {
-        Alert.alert("Rango inválido", "La fecha de inicio no puede ser posterior a la fecha de fin.");
+        Alert.alert(t("wallet.invalidRange"), t("wallet.invalidDatesOrder"));
         return;
       }
 
@@ -454,11 +461,11 @@ export default function BalanceScreen() {
     }
 
     setFilterModalVisible(false);
-  }, [customDraft.end, customDraft.start, filterDraft]);
+  }, [customDraft.end, customDraft.start, filterDraft, t]);
 
   const handleNotificationsPress = useCallback(() => {
-    Alert.alert("Notificaciones", "Pronto podrás ver tus notificaciones aquí.");
-  }, []);
+    Alert.alert(t("wallet.notifications"), t("wallet.notificationsSoon"));
+  }, [t]);
 
   const handleMarkAsPaid = useCallback(
     async (entry: SettlementEntry) => {
@@ -476,16 +483,16 @@ export default function BalanceScreen() {
           note: `Liquidación ${entry.groupName}`,
         });
 
-  Alert.alert('Pago registrado', `Se registró un pago de ${formatCurrency(entry.amount)} a ${entry.toName}.`);
+  Alert.alert(t('wallet.paymentRegistered'), t('wallet.paymentRegisteredMsg', { amount: formatCurrency(entry.amount), name: entry.toName }));
   await loadBalance({ silent: true });
       } catch (err) {
         console.error('Error registering payment:', err);
-        Alert.alert('No se pudo registrar el pago', err instanceof Error ? err.message : 'Intenta nuevamente más tarde.');
+        Alert.alert(t('wallet.paymentFailed'), err instanceof Error ? err.message : t('wallet.paymentFailedMsg'));
       } finally {
         setActionLoadingId(null);
       }
     },
-    [api, currentMemberId, formatCurrency, loadBalance]
+    [api, currentMemberId, formatCurrency, loadBalance, t]
   );
 
   const handleReminder = useCallback(async (entry: SettlementEntry) => {
@@ -526,7 +533,7 @@ export default function BalanceScreen() {
     const reminderLines = [
       `Hola ${entry.fromName}, recuerda que tienes pendiente ${amountLabel} del grupo "${entry.groupName}" en YoPago.`,
       "",
-      "Registra el pago, adjunta comprobante o marca que pagaste en efectivo.",
+      t("wallet.reminderInstructions"),
     ];
 
     if (deepLink) {
@@ -559,13 +566,10 @@ export default function BalanceScreen() {
         });
       } catch (shareError) {
         console.error('No se pudo compartir el recordatorio:', shareError);
-        Alert.alert(
-          'No se pudo abrir WhatsApp',
-          'Intenta nuevamente más tarde o envía el recordatorio manualmente.'
-        );
+        Alert.alert(t('wallet.whatsappError'), t('wallet.whatsappErrorMsg'));
       }
     }
-  }, [formatCurrency]);
+  }, [formatCurrency, t]);
 
   if (isLoading && !refreshing) {
     return (
@@ -605,9 +609,9 @@ export default function BalanceScreen() {
             </View>
 
             <View style={styles.filterSection}>
-              <ThemedText variant="bodyBold" style={styles.filterSectionTitle}>Rango de fechas</ThemedText>
+              <ThemedText variant="bodyBold" style={styles.filterSectionTitle}>{t("wallet.dateRange")}</ThemedText>
               <View style={styles.filterOptionsRow}>
-                {DATE_RANGE_OPTIONS.map((option) => {
+                {dateRangeOptions.map((option) => {
                   const isActive = filterDraft.dateRange === option.key;
                   return (
                     <Pressable
@@ -683,7 +687,7 @@ export default function BalanceScreen() {
                       filterDraft.groupId === "all" && styles.filterListItemTextActive,
                     ]}
                   >
-                    Todos los grupos
+                    {t("wallet.allGroups")}
                   </ThemedText>
                   {filterDraft.groupId === "all" ? (
                     <Ionicons name="checkmark" size={18} color={palette.primary} />
@@ -809,7 +813,7 @@ export default function BalanceScreen() {
             </View> 
             <View style={styles.summaryTitleGroup}> 
               <ThemedText variant="title" weight="bold" style={styles.summaryTitle}>
-                Balance personal
+                {t("wallet.personalBalance")}
               </ThemedText> 
               {memberName ? ( 
                 <ThemedText variant="label" style={styles.summarySubtitle} numberOfLines={1}>
@@ -821,13 +825,13 @@ export default function BalanceScreen() {
 
           <View style={[styles.summaryGrid, {marginBottom: palette.spacing.md}]}> 
             <View style={[styles.summaryMetric, {padding: palette.spacing.md, borderRadius: palette.radius.md}]}> 
-              <ThemedText variant="label" style={{ color: palette.textMuted }}>Te deben</ThemedText> 
+              <ThemedText variant="label" style={{ color: palette.textMuted }}>{t("wallet.owedToYou")}</ThemedText>
               <ThemedText variant="title" weight="bold" style={{ color: palette.success }}> 
                 {formatCurrency(totals.owedToYou)} 
               </ThemedText> 
             </View> 
             <View style={[styles.summaryMetric, {padding: palette.spacing.md, borderRadius: palette.radius.md}]}> 
-              <ThemedText variant="label" style={{ color: palette.textMuted }}>Tú debes</ThemedText> 
+              <ThemedText variant="label" style={{ color: palette.textMuted }}>{t("wallet.youOwe")}</ThemedText>
               <ThemedText variant="title" weight="bold" style={{ color: palette.warning }}> 
                 {formatCurrency(totals.youOwe)} 
               </ThemedText> 
@@ -850,7 +854,7 @@ export default function BalanceScreen() {
                   netIsPositive ? styles.netChipTextPositive : styles.netChipTextNegative 
                 ]} 
               > 
-                Balance neto {formatCurrency(totals.net)} 
+                {t("home.netBalance")} {formatCurrency(totals.net)}
               </ThemedText> 
             </View> 
             <ThemedText variant="label" style={styles.summaryDescription} numberOfLines={2}> 
@@ -866,7 +870,7 @@ export default function BalanceScreen() {
               }}
             > 
               <ThemedText variant="bodyBold" style={styles.errorText}>{error}</ThemedText> 
-              <ThemedText variant="label" weight="semiBold" style={styles.errorAction}>Reintentar</ThemedText> 
+              <ThemedText variant="label" weight="semiBold" style={styles.errorAction}>{t("home.retry")}</ThemedText> 
             </Pressable> 
           ) : null} 
         </Card>
@@ -876,10 +880,10 @@ export default function BalanceScreen() {
             <View style={[styles.sectionHeader, {marginBottom: palette.spacing.sm}]}> 
               <View style={{ flex: 1, gap: 4 }}> 
                 <ThemedText variant="headline" weight="semiBold" style={{ color: palette.text }}>
-                  Por grupo
-                </ThemedText> 
-                <ThemedText variant="label" style={styles.sectionDescription}> 
-                  Visualiza cómo se reparten tus pendientes en cada grupo activo. 
+                  {t("wallet.byGroup")}
+                </ThemedText>
+                <ThemedText variant="label" style={styles.sectionDescription}>
+                  {t("wallet.byGroupDesc")}
                 </ThemedText> 
               </View> 
               <View style={[styles.sectionIcon, { backgroundColor: applyAlpha(palette.primary, 0.16) }]}>  
@@ -889,8 +893,8 @@ export default function BalanceScreen() {
 
             {groupBreakdown.length === 0 ? ( 
               <View style={styles.emptyState}> 
-                <ThemedText variant="label" style={{ color: palette.textMuted }}> 
-                  No tienes saldos pendientes en tus grupos. 
+                <ThemedText variant="label" style={{ color: palette.textMuted }}>
+                  {t("wallet.byGroupEmpty")}
                 </ThemedText> 
               </View> 
             ) : ( 
@@ -906,7 +910,7 @@ export default function BalanceScreen() {
                           {group.groupName} 
                         </ThemedText> 
                         <ThemedText variant="label" style={styles.listRowMeta}> 
-                          {group.settlements.length} movimiento(s) 
+                          {t("wallet.movements", { count: group.settlements.length })}
                         </ThemedText> 
                       </View> 
                     </View> 
@@ -946,10 +950,10 @@ export default function BalanceScreen() {
             <View style={[styles.sectionHeader, {marginBottom: palette.spacing.sm}]}> 
               <View style={{ flex: 1, gap: 4 }}> 
                 <ThemedText variant="headline" weight="semiBold" style={{ color: palette.text }}>
-                  Por persona
-                </ThemedText> 
-                <ThemedText variant="label" style={styles.sectionDescription}> 
-                  Resume cuánto debes o te deben tus contactos para cerrar cuentas. 
+                  {t("wallet.byPerson")}
+                </ThemedText>
+                <ThemedText variant="label" style={styles.sectionDescription}>
+                  {t("wallet.byPersonDesc")}
                 </ThemedText> 
               </View> 
               <View style={[styles.sectionIcon, { backgroundColor: applyAlpha(palette.accent, 0.16) }]}>  
@@ -959,8 +963,8 @@ export default function BalanceScreen() {
 
             {personBreakdown.length === 0 ? ( 
               <View style={styles.emptyState}> 
-                <ThemedText variant="label" style={{ color: palette.textMuted }}> 
-                  No tienes deudas pendientes con personas específicas. 
+                <ThemedText variant="label" style={{ color: palette.textMuted }}>
+                  {t("wallet.byPersonEmpty")}
                 </ThemedText> 
               </View> 
             ) : ( 
@@ -1038,7 +1042,7 @@ export default function BalanceScreen() {
                                   palette 
                                 )} 
                               > 
-                                {isOutgoing ? "Marcar pago" : "Recordar"} 
+                                {isOutgoing ? t("wallet.markPaid") : t("wallet.remind")}
                               </ThemedText> 
                             )} 
                           </Pressable> 
@@ -1079,12 +1083,12 @@ const getActionTextStyles = (variant: ActionVariant, palette: AppPalette): TextS
   textAlign: "center",
 });
 
-const buildFilterSummary = (filter: FilterState, groups: RawGroupData[]): string => {
-  const dateLabel = getDateLabelForFilter(filter);
+const buildFilterSummary = (filter: FilterState, groups: RawGroupData[], t: TFunction): string => {
+  const dateLabel = getDateLabelForFilter(filter, t);
   const groupLabel =
     filter.groupId === "all"
-      ? "Todos los grupos"
-      : groups.find((group) => group.groupId === filter.groupId)?.groupName ?? "Grupo seleccionado";
+      ? t("wallet.allGroups")
+      : groups.find((group) => group.groupId === filter.groupId)?.groupName ?? t("wallet.selectedGroup");
 
   return `${dateLabel} • ${groupLabel}`;
 };
@@ -1405,28 +1409,28 @@ const getTimeOrNull = (value: string | null | undefined): number | null => {
   return Number.isFinite(time) ? time : null;
 };
 
-const getDateLabelForFilter = (filter: FilterState): string => {
+const getDateLabelForFilter = (filter: FilterState, t: TFunction): string => {
   switch (filter.dateRange) {
     case "7d":
-      return "Últimos 7 días";
+      return t("wallet.last7Days");
     case "30d":
-      return "Últimos 30 días";
+      return t("wallet.last30Days");
     case "custom": {
       const startLabel = formatDisplayDate(filter.startDate);
       const endLabel = formatDisplayDate(filter.endDate);
       if (startLabel && endLabel) {
-        return `${startLabel} al ${endLabel}`;
+        return t("wallet.dateRangeFull", { start: startLabel, end: endLabel });
       }
       if (startLabel) {
-        return `Desde ${startLabel}`;
+        return t("wallet.dateRangeFrom", { date: startLabel });
       }
       if (endLabel) {
-        return `Hasta ${endLabel}`;
+        return t("wallet.dateRangeTo", { date: endLabel });
       }
-      return "Personalizado";
+      return t("wallet.custom");
     }
     default:
-      return "Todo el tiempo";
+      return t("wallet.allTime");
   }
 };
 

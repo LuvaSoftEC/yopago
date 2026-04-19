@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -16,6 +17,7 @@ interface AuthScreenProps {
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ style }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const { t } = useTranslation();
   const scheme = useColorScheme() ?? 'light';
   const palette = Colors[scheme];
   const isDark = scheme === 'dark';
@@ -30,11 +32,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ style }) => {
   ];
 
   const headline = useMemo(
-    () =>
-      isLogin
-        ? 'Comparte y divide tus gastos, sin olvidar ninguno!'
-        : 'Crea una cuenta y manten tus finanzas compartidas al dia',
-    [isLogin],
+    () => (isLogin ? t('auth.loginHeadline') : t('auth.registerHeadline')),
+    [isLogin, t],
   );
 
   return (
@@ -104,7 +103,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ style }) => {
             </ThemedText>
 
             <ThemedText variant="headline" weight="bold" style={styles.title}>
-              {isLogin ? 'Iniciar Sesion' : 'Crear Cuenta'}
+              {isLogin ? t('auth.login') : t('auth.createAccount')}
             </ThemedText>
 
             {isLogin ? (
@@ -121,16 +120,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ style }) => {
             <View style={styles.switchWrapper}>
               {isLogin ? (
                 <ThemedText variant="body" style={styles.switchText} onPress={handleSwitchToRegister}>
-                  No tienes cuenta?{' '}
+                  {t('auth.noAccount')}{' '}
                   <ThemedText variant="link" style={styles.switchLink}>
-                    Registrate
+                    {t('auth.register')}
                   </ThemedText>
                 </ThemedText>
               ) : (
                 <ThemedText variant="body" style={styles.switchText} onPress={handleSwitchToLogin}>
-                  Ya tienes cuenta?{' '}
+                  {t('auth.hasAccount')}{' '}
                   <ThemedText variant="link" style={styles.switchLink}>
-                    Inicia sesion
+                    {t('auth.login')}
                   </ThemedText>
                 </ThemedText>
               )}

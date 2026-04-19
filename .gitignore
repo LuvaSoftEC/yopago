@@ -1,2 +1,55 @@
+# ─── Secrets & environment ────────────────────────────────────────────────────
 .env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.production
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
 .vscode
+.idea
+*.iml
+*.suo
+*.user
+*.workspace
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Claude Code ──────────────────────────────────────────────────────────────
+.claude/
+
+# ─── Java / Maven (backend) ───────────────────────────────────────────────────
+yopago/target/
+*.class
+*.jar
+*.war
+hs_err_pid*
+
+# ─── Node / Expo (frontend) ───────────────────────────────────────────────────
+node_modules/
+yopago-front/.expo/
+yopago-front/dist/
+yopago-front/web-build/
+yopago-front/.next/
+yopago-front/expo-env.d.ts
+
+# ─── Terraform ────────────────────────────────────────────────────────────────
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+*.tfvars
+!*.tfvars.example
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+infra/local/.terraform/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.docker/

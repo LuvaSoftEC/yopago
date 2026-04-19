@@ -52,7 +52,7 @@ export interface LoginResponse {
 }
 
 class AuthService {
-  // Claves para AsyncStorage
+  // Keys for AsyncStorage
   private readonly STORAGE_KEYS = {
     ACCESS_TOKEN: '@yopago/access_token',
     REFRESH_TOKEN: '@yopago/refresh_token',
@@ -62,11 +62,11 @@ class AuthService {
   private readonly TOKEN_GRACE_PERIOD_MS = 5 * 60 * 1000;
 
   /**
-   * Registra un nuevo usuario usando tu API backend
+   * Registers a new user using your backend API
    */
   async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
     try {
-      console.log('🚀 Registrando nuevo usuario...');
+      console.log('🚀 Registering new user...');
       
       const response = await fetch(`${API_CONFIG.BASE_URL}/auth/register`, {
         method: 'POST',
@@ -82,7 +82,7 @@ class AuthService {
         try {
           parsed = JSON.parse(rawBody);
         } catch (parseError) {
-          console.warn('⚠️ No se pudo parsear la respuesta de registro como JSON:', parseError);
+          console.warn('⚠️ Could not parse the registration response as JSON:', parseError);
         }
       }
 
@@ -93,26 +93,26 @@ class AuthService {
           : `Error en el registro (código ${response.status})`,
       };
 
-      console.log('📝 Respuesta del registro:', result.success ? 'Exitoso' : 'Falló');
+      console.log('📝 Registration response:', result.success ? 'Successful' : 'Failed');
 
       if (!response.ok || !result.success) {
         throw new Error(result.message || 'Error en el registro');
       }
 
-      console.log('✅ Usuario registrado exitosamente:', result.data?.username ?? credentials.username);
+      console.log('✅ User registered successfully:', result.data?.username ?? credentials.username);
       return result;
     } catch (error) {
-      console.error('❌ Error en registro:', error);
+      console.error('❌ Error in registration:', error);
       throw error;
     }
   }
 
   /**
-   * Realiza el login usando tu API backend
+   * Performs login using your backend API
    */
   async login(credentials: LoginCredentials): Promise<AuthTokens | null> {
     try {
-      console.log('🚀 Iniciando login con API backend...');
+      console.log('🚀 Starting login with backend API...');
       
       const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
         method: 'POST',
@@ -124,7 +124,7 @@ class AuthService {
 
       const result: LoginResponse = await response.json();
       
-      console.log('📝 Respuesta del servidor:', result.success ? 'Exitosa' : 'Falló');
+      console.log('📝 Server response:', result.success ? 'Successful' : 'Failed');
 
       if (!response.ok || !result.success) {
         throw new Error(result.message || 'Error en el login');
@@ -133,32 +133,32 @@ class AuthService {
       if (result.data) {
         await this.storeTokens(result.data);
         
-        // Obtener información del usuario del token
+        // Get user information from the token
         const userInfo = await this.getUserInfoFromToken(result.data.access_token);
         if (userInfo) {
           await this.storeUserInfo(userInfo);
         }
         
-        console.log('✅ Login exitoso y tokens almacenados');
+        console.log('✅ Login successful and tokens stored');
         return result.data;
       }
 
       return null;
     } catch (error) {
-      console.error('❌ Error en login:', error);
+      console.error('❌ Error in login:', error);
       throw error;
     }
   }
 
   /**
-   * Extrae información del usuario del JWT token
+   * Extracts user information from the JWT token
    */
   private async getUserInfoFromToken(accessToken: string): Promise<User | null> {
     try {
-      // Decodificar el JWT (parte del payload está en base64)
+      // Decode the JWT (the payload part is base64 encoded)
       const tokenParts = accessToken.split('.');
       if (tokenParts.length !== 3) {
-        throw new Error('Token JWT inválido');
+        throw new Error('Invalid JWT token');
       }
 
       const payload = JSON.parse(atob(tokenParts[1]));
@@ -172,16 +172,16 @@ class AuthService {
         roles: payload.realm_access?.roles || [],
       };
 
-      console.log('👤 Información del usuario extraída:', userInfo.username);
+      console.log('👤 User information extracted:', userInfo.username);
       return userInfo;
     } catch (error) {
-      console.error('❌ Error extrayendo info del usuario:', error);
+      console.error('❌ Error extracting user info:', error);
       return null;
     }
   }
 
   /**
-   * Almacena los tokens en AsyncStorage
+   * Stores tokens in AsyncStorage
    */
   private async storeTokens(tokens: AuthTokens): Promise<void> {
     try {
@@ -193,24 +193,24 @@ class AuthService {
         AsyncStorage.setItem(this.STORAGE_KEYS.TOKEN_EXPIRY, expiryTime.toString()),
       ]);
     } catch (error) {
-      console.error('❌ Error almacenando tokens:', error);
+      console.error('❌ Error storing tokens:', error);
       throw error;
     }
   }
 
   /**
-   * Almacena la información del usuario
+   * Stores user information
    */
   private async storeUserInfo(userInfo: User): Promise<void> {
     try {
       await AsyncStorage.setItem(this.STORAGE_KEYS.USER_INFO, JSON.stringify(userInfo));
     } catch (error) {
-      console.error('❌ Error almacenando info del usuario:', error);
+      console.error('❌ Error storing user info:', error);
     }
   }
 
   /**
-   * Verifica si hay un token válido almacenado
+   * Checks if there is a valid stored token
    */
   async isAuthenticated(): Promise<boolean> {
     try {
@@ -230,16 +230,16 @@ class AuthService {
         return false;
       }
 
-      // Verificar si el token no ha expirado (con margen)
+      // Check if the token has not expired (with grace period)
       return now < (expiryTime - this.TOKEN_GRACE_PERIOD_MS);
     } catch (error) {
-      console.error('❌ Error verificando autenticación:', error);
+      console.error('❌ Error verifying authentication:', error);
       return false;
     }
   }
 
   /**
-   * Obtiene el token de acceso actual
+   * Gets the current access token
    */
   async getAccessToken(): Promise<string | null> {
     try {
@@ -249,13 +249,13 @@ class AuthService {
       }
       return await AsyncStorage.getItem(this.STORAGE_KEYS.ACCESS_TOKEN);
     } catch (error) {
-      console.error('❌ Error obteniendo token:', error);
+      console.error('❌ Error getting token:', error);
       return null;
     }
   }
 
   /**
-   * Obtiene la información del usuario almacenada
+   * Gets the stored user information
    */
   async getUserInfo(): Promise<User | null> {
     try {
@@ -265,7 +265,7 @@ class AuthService {
       }
       return JSON.parse(userInfoStr);
     } catch (error) {
-      console.error('❌ Error obteniendo info del usuario:', error);
+      console.error('❌ Error getting user info:', error);
       return null;
     }
   }
@@ -278,7 +278,7 @@ class AuthService {
       const userInfo = await this.getUserInfo();
       return userInfo?.roles.includes(role) || false;
     } catch (error) {
-      console.error('❌ Error verificando rol:', error);
+      console.error('❌ Error verifying role:', error);
       return false;
     }
   }
@@ -288,7 +288,7 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      console.log('👋 Cerrando sesión...');
+      console.log('👋 Logging out...');
       
       // Limpiar AsyncStorage
       await Promise.all([
@@ -298,9 +298,9 @@ class AuthService {
         AsyncStorage.removeItem(this.STORAGE_KEYS.TOKEN_EXPIRY),
       ]);
 
-      console.log('✅ Sesión cerrada exitosamente');
+      console.log('✅ Session closed successfully');
     } catch (error) {
-      console.error('❌ Error cerrando sesión:', error);
+      console.error('❌ Error logging out:', error);
       throw error;
     }
   }
@@ -317,10 +317,10 @@ class AuthService {
 
       // Aquí puedes implementar el endpoint de refresh si tu API lo tiene
       // Por ahora, retornamos false para forzar re-login
-      console.log('⚠️ Refresh token no implementado, se requiere re-login');
+      console.log('⚠️ Refresh token not implemented, re-login required');
       return false;
     } catch (error) {
-      console.error('❌ Error refrescando token:', error);
+      console.error('❌ Error refreshing token:', error);
       return false;
     }
   }
@@ -335,7 +335,7 @@ class AuthService {
       const expiryTime = parseInt(expiryTimeStr, 10);
       return Number.isNaN(expiryTime) ? null : expiryTime;
     } catch (error) {
-      console.error('❌ Error obteniendo expiración del token:', error);
+      console.error('❌ Error getting token expiry:', error);
       return null;
     }
   }
@@ -378,7 +378,7 @@ class AuthService {
       const refreshed = await this.refreshToken();
       if (!refreshed) {
         await this.logout();
-        throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+        throw new Error('Session expired. Please log in again.');
       }
       
       // Reintentar con el nuevo token

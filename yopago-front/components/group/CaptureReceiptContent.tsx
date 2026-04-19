@@ -429,7 +429,7 @@ export function CaptureReceiptContent({
       });
 
       if (!response?.expense) {
-        throw new Error('El servidor no devolvió la información del gasto procesado.');
+        throw new Error('The server did not return the processed expense information.');
       }
 
       if (onReceiptReady) {

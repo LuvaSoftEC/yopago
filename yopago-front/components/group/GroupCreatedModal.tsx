@@ -39,7 +39,7 @@ export default function GroupCreatedModal({
       await Clipboard.setStringAsync(groupData.joinCode);
       Alert.alert('Copiado', 'Código copiado al portapapeles');
     } catch (error) {
-      console.error('Error copiando código:', error);
+      console.error('Error copying code:', error);
       Alert.alert('Error', 'No se pudo copiar el código');
     }
   };

@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { keycloakDirectAuth } from '../../services/keycloakDirectAuth';
 
 interface DirectLoginFormProps {
@@ -15,44 +16,45 @@ interface DirectLoginFormProps {
   style?: any;
 }
 
-export const DirectLoginForm: React.FC<DirectLoginFormProps> = ({ 
-  onLoginSuccess, 
-  style 
+export const DirectLoginForm: React.FC<DirectLoginFormProps> = ({
+  onLoginSuccess,
+  style
 }) => {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
-      Alert.alert('Error', 'Por favor ingresa usuario y contraseña');
+      Alert.alert(t('common.error'), t('auth.loginErrorEmpty'));
       return;
     }
 
     try {
       setIsLoading(true);
-      
+
       const result = await keycloakDirectAuth.directLogin({
         username: username.trim(),
         password: password.trim(),
       });
 
       if (result) {
-        Alert.alert('Éxito', 'Login exitoso', [
-          { text: 'OK', onPress: onLoginSuccess }
+        Alert.alert(t('common.success'), t('auth.loginSuccessMessage'), [
+          { text: t('common.ok'), onPress: onLoginSuccess }
         ]);
       }
     } catch (error: any) {
       console.error('Error en login:', error);
-      
-      let errorMessage = 'Error al iniciar sesión';
+
+      let errorMessage = t('auth.loginError');
       if (error.message?.includes('Invalid user credentials')) {
-        errorMessage = 'Usuario o contraseña incorrectos';
+        errorMessage = t('auth.loginInvalidCredentials');
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
-      Alert.alert('Error de Login', errorMessage);
+
+      Alert.alert(t('auth.loginErrorTitle'), errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -60,21 +62,21 @@ export const DirectLoginForm: React.FC<DirectLoginFormProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.title}>Iniciar Sesión</Text>
-      
+      <Text style={styles.title}>{t('auth.login')}</Text>
+
       <TextInput
         style={styles.input}
-        placeholder="Usuario"
+        placeholder={t('auth.usernameShort')}
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
         autoCorrect={false}
         editable={!isLoading}
       />
-      
+
       <TextInput
         style={styles.input}
-        placeholder="Contraseña"
+        placeholder={t('auth.password')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -82,7 +84,7 @@ export const DirectLoginForm: React.FC<DirectLoginFormProps> = ({
         autoCorrect={false}
         editable={!isLoading}
       />
-      
+
       <TouchableOpacity
         style={[styles.loginButton, isLoading && styles.disabledButton]}
         onPress={handleLogin}
@@ -91,7 +93,7 @@ export const DirectLoginForm: React.FC<DirectLoginFormProps> = ({
         {isLoading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+          <Text style={styles.loginButtonText}>{t('auth.login')}</Text>
         )}
       </TouchableOpacity>
     </View>

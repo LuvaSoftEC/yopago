@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTranslation } from "react-i18next";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -11,6 +12,7 @@ import { useRouter, type Href } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const scheme = useColorScheme() ?? "light";
   const c = Colors[scheme];
   const isDark = scheme === "dark";
@@ -89,9 +91,9 @@ export default function LoginScreen() {
                 textShadowRadius: 8,
               }}
             >
-              💡 Comparte y divide tus gastos, <ThemedText style={{ color: '#38bdf8', fontWeight: '900' }}>¡sin olvidar ninguno!</ThemedText>
+              {t('auth.loginHeadline')}
             </ThemedText>
-            <ThemedText type="title" style={styles.title}>Iniciar Sesión</ThemedText>
+            <ThemedText type="title" style={styles.title}>{t('auth.login')}</ThemedText>
             {/* Subtítulo eliminado para ahorrar espacio */}
             <LoginForm
               onLoginSuccess={handleLoginSuccess}
@@ -101,9 +103,9 @@ export default function LoginScreen() {
               showDemoUsers={false}
             />
             <View style={styles.guestAccessContainer}>
-              <ThemedText style={styles.guestAccessLabel}>¿Tienes un código de invitado?</ThemedText>
+              <ThemedText style={styles.guestAccessLabel}>{t('auth.guestCodeLabel')}</ThemedText>
               <Button
-                title="Ingresar como invitado"
+                title={t('auth.guestAccess')}
                 variant="secondary"
                 onPress={openGuestModal}
                 fullWidth
@@ -111,7 +113,7 @@ export default function LoginScreen() {
             </View>
             <View style={{ alignItems: 'center', marginTop: 18 }}>
               <ThemedText style={{ color: '#22d3ee', fontWeight: '600', fontSize: 14, textAlign: 'center' }} onPress={handleSwitchToRegister}>
-                ¿No tienes cuenta? <ThemedText style={{ color: '#38bdf8', textDecorationLine: 'underline', fontWeight: '700' }}>Regístrate</ThemedText>
+                {t('auth.noAccount')}{' '}<ThemedText style={{ color: '#38bdf8', textDecorationLine: 'underline', fontWeight: '700' }}>{t('auth.register')}</ThemedText>
               </ThemedText>
             </View>
           </View>

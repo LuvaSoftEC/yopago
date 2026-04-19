@@ -59,7 +59,7 @@ class ApiService {
     } catch (error) {
       console.error(`API Error for ${endpoint}:`, error);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('La solicitud ha excedido el tiempo límite');
+        throw new Error('Request timed out');
       }
       throw error;
     }
@@ -69,7 +69,7 @@ class ApiService {
   private async convertFileToBase64(fileUri: string): Promise<string> {
     try {
       if (!fileUri) {
-        throw new Error('URI de archivo inválida');
+        throw new Error('Invalid file URI');
       }
 
       if (fileUri.startsWith('data:')) {
@@ -102,7 +102,7 @@ class ApiService {
       });
     } catch (error) {
       console.error('Error converting file to base64:', error);
-      throw new Error('No se pudo procesar el archivo adjunto');
+      throw new Error('Could not process the attached file');
     }
   }
 
@@ -192,14 +192,14 @@ class ApiService {
   // Unirse a un grupo usando código de acceso
   async joinGroup(code: string, memberId: number): Promise<JoinGroupResponse> {
     try {
-      console.log('🔗 Intentando unirse al grupo con código:', code, 'memberId:', memberId);
+      console.log('🔗 Attempting to join group with code:', code, 'memberId:', memberId);
       
       const request: JoinGroupRequest = {
         code: code.trim(),
         memberId: memberId
       };
 
-      console.log('📤 Enviando request:', request);
+      console.log('📤 Sending request:', request);
 
       const response = await this.makeRequest<JoinGroupResponse>(
         API_CONFIG.ENDPOINTS.JOIN_GROUP,
@@ -209,7 +209,7 @@ class ApiService {
         }
       );
 
-      console.log('📥 Respuesta recibida:', response);
+      console.log('📥 Response received:', response);
       return response;
     } catch (error) {
       console.error('❌ Error joining group:', error);
@@ -220,20 +220,20 @@ class ApiService {
   // Obtener todos los grupos del usuario
   async getUserGroups(): Promise<any[]> {
     try {
-      console.log('📋 Obteniendo grupos del usuario...');
+      console.log('📋 Fetching user groups...');
       console.log('🔗 Endpoint:', API_CONFIG.ENDPOINTS.USER_GROUPS);
       
       const response = await this.makeRequest<{ groups: any[] }>(API_CONFIG.ENDPOINTS.USER_GROUPS);
-      console.log('✅ Grupos obtenidos:', response);
+      console.log('✅ Groups fetched:', response);
       return response.groups || [];
     } catch (error) {
       console.error('❌ Error fetching user groups:', error);
       
       // Intentar con endpoint alternativo si el primero falla
       try {
-        console.log('🔄 Intentando endpoint alternativo: /groups');
+        console.log('🔄 Trying alternative endpoint: /groups');
         const response = await this.makeRequest<any[]>('/groups');
-        console.log('✅ Grupos obtenidos (alternativo):', response);
+        console.log('✅ Groups fetched (alternative):', response);
         return response || [];
       } catch (alternativeError) {
         console.error('❌ Error con endpoint alternativo:', alternativeError);
@@ -245,13 +245,13 @@ class ApiService {
   // Obtener detalles completos de un grupo específico
   async getGroupDetails(groupId: string): Promise<GroupDetails | null> {
     try {
-      console.log('🔍 Obteniendo detalles del grupo:', groupId);
+      console.log('🔍 Fetching group details:', groupId);
       
       // Intentamos primero con el endpoint simple
       const response = await this.makeRequest<GroupDetails>(
         API_CONFIG.ENDPOINTS.GROUP_BY_ID.replace(':id', groupId)
       );
-      console.log('✅ Detalles del grupo obtenidos:', response);
+      console.log('✅ Group details fetched:', response);
       return response;
     } catch (error) {
       console.error('❌ Error fetching group details:', error);
@@ -275,7 +275,7 @@ class ApiService {
   // Agregar un miembro a un grupo
   async addMember(groupId: string, memberName: string): Promise<any> {
     try {
-      console.log('👥 Agregando miembro al grupo:', { groupId, memberName });
+      console.log('👥 Adding member to group:', { groupId, memberName });
       
       const request = {
         name: memberName
@@ -289,7 +289,7 @@ class ApiService {
         }
       );
 
-      console.log('✅ Miembro agregado exitosamente:', response);
+      console.log('✅ Member added successfully:', response);
       return response;
     } catch (error) {
       console.error('❌ Error adding member:', error);

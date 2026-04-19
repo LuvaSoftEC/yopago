@@ -3,7 +3,7 @@
   "enabled": true,
   "displayName": "YoPago - Gestión de Gastos",
   "accessTokenLifespan": 3600,
-  "sslRequired": "external",
+  "sslRequired": "none",
   "registrationAllowed": true,
   "roles": {
     "realm": [
@@ -22,7 +22,7 @@
       "lastName": "User",
       "email": "admin@yopago.com",
       "credentials": [
-  { "type": "password", "value": "admin-pass", "temporary": false }
+  { "type": "password", "value": "changeme", "temporary": false }
       ],
       "realmRoles": ["admin", "user"]
     }
@@ -33,7 +33,7 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-  "secret": "yopago-api-secret",
+  "secret": "changeme",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,

@@ -348,7 +348,7 @@ export default function GroupDetailsScreen() {
         return;
       }
 
-      console.log('🔍 Cargando detalles del grupo:', groupId);
+      console.log('🔍 Loading group details:', groupId);
 
       const details = await authenticatedApiService.getGroupDetails(parseInt(groupId));
       setGroupDetails(details);
@@ -361,7 +361,7 @@ export default function GroupDetailsScreen() {
           resolvedMemberId = currentMember.memberId;
         }
       } catch (memberError) {
-        console.warn('⚠️ No se pudo obtener el miembro autenticado, se intentará con userInfo:', memberError);
+        console.warn('⚠️ Could not get authenticated member, will attempt with userInfo:', memberError);
       }
 
       if (resolvedMemberId === null) {
@@ -369,7 +369,7 @@ export default function GroupDetailsScreen() {
           const userInfo = await authenticatedApiService.getCurrentUserInfo();
           resolvedMemberId = findCurrentMemberId(details, userInfo) ?? null;
         } catch (userInfoError) {
-          console.warn('⚠️ No se pudo inferir el miembro actual desde userInfo:', userInfoError);
+          console.warn('⚠️ Could not infer current member from userInfo:', userInfoError);
         }
       }
 
@@ -380,7 +380,7 @@ export default function GroupDetailsScreen() {
 
       setCurrentUserId(normalizedMemberId);
     } catch (error) {
-      console.error('❌ Error cargando detalles del grupo:', error);
+      console.error('❌ Error loading group details:', error);
       showAlert(
         'Error',
         'No se pudo cargar la información del grupo',
@@ -676,7 +676,7 @@ export default function GroupDetailsScreen() {
         return parsed as PaymentNoteMetadata;
       }
     } catch (error) {
-      console.warn('⚠️ No se pudo parsear metadata del pago:', error);
+      console.warn('⚠️ Could not parse payment metadata:', error);
     }
 
     return null;
@@ -802,8 +802,8 @@ export default function GroupDetailsScreen() {
 
   const handleMemberAdded = async (memberResponse: JoinGroupMemberResponse) => {
     try {
-      console.log('Miembro agregado:', memberResponse);
-      // Recargar los detalles del grupo para mostrar el nuevo miembro
+      console.log('Member added:', memberResponse);
+      // Reload group details to show new member
       await loadGroupDetails();
     } catch (error) {
       console.error('Error reloading group details after member added:', error);
@@ -811,14 +811,14 @@ export default function GroupDetailsScreen() {
   };
 
   const handleRemoveMember = (memberId: number, memberName: string) => {
-    console.log('🗑️ Intentando eliminar miembro:', memberId, memberName);
+    console.log('🗑️ Attempting to delete member:', memberId, memberName);
     setMemberMenuMemberId(null);
     setMemberToRemove({ id: memberId, name: memberName });
   };
 
   const handleConfirmRemoveMember = useCallback(async () => {
     if (!groupDetails || !memberToRemove) {
-      console.log('❌ No hay detalles del grupo o miembro seleccionado');
+      console.log('❌ No group details or member selected');
       return;
     }
 
@@ -2159,7 +2159,7 @@ export default function GroupDetailsScreen() {
 
           const payerId = modalRecipientId;
           if (!payerId) {
-            throw new Error('No se encontró el destinatario del pago');
+            throw new Error('Payment recipient not found');
           }
 
           const memoValue = note.trim();

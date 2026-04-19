@@ -64,24 +64,24 @@ export default function ProfileScreen() {
     () => [
       {
         value: 'system' as ThemePreference,
-        title: 'Sincronizado con tu sistema',
-        description: `Se adapta automáticamente a ${systemColorScheme === 'dark' ? 'modo oscuro' : 'modo claro'} según el dispositivo.`,
+        title: t('profile.syncSystem'),
+        description: t('profile.syncSystemDesc', { mode: systemColorScheme === 'dark' ? t('profile.dark') : t('profile.light') }),
         icon: 'phone-portrait-outline' as const,
       },
       {
         value: 'light' as ThemePreference,
-        title: 'Siempre claro',
-        description: 'Paleta luminosa y limpia, ideal para espacios bien iluminados.',
+        title: t('profile.alwaysLight'),
+        description: t('profile.alwaysLightDesc'),
         icon: 'sunny-outline' as const,
       },
       {
         value: 'dark' as ThemePreference,
-        title: 'Siempre oscuro',
-        description: 'Contrastes suaves para descansar la vista en ambientes con poca luz.',
+        title: t('profile.alwaysDark'),
+        description: t('profile.alwaysDarkDesc'),
         icon: 'moon-outline' as const,
       },
     ],
-    [systemColorScheme],
+    [systemColorScheme, t],
   );
 
   const buildPreferenceHandler = useCallback(
@@ -129,7 +129,7 @@ export default function ProfileScreen() {
             </View> 
             <View style={styles.profileInfo}> 
               <ThemedText style={{fontSize: palette.font.title, fontWeight: "800", color: palette.text, letterSpacing: 0.5}}> 
-                {user?.firstName || user?.username || 'Invitado'} 
+                {user?.firstName || user?.username || t('profile.guest')}
               </ThemedText> 
               {user?.email ? ( 
                 <ThemedText style={{ color: palette.textMuted, fontSize: palette.font.small }}> 
@@ -197,7 +197,7 @@ export default function ProfileScreen() {
           {themeLoading ? ( 
             <View style={styles.loadingRow}> 
               <ActivityIndicator color={palette.primary} size="small" /> 
-              <ThemedText style={styles.loadingText}>Sincronizando preferencia de tema…</ThemedText> 
+              <ThemedText style={styles.loadingText}>{t('profile.syncingTheme')}</ThemedText> 
             </View> 
           ) : null} 
         </View>
@@ -262,8 +262,8 @@ export default function ProfileScreen() {
 
         <View style={[styles.section, {padding: palette.spacing.lg, borderRadius: palette.radius.lg}]}> 
           <ThemedText style={{fontSize: palette.font.h2, fontWeight: "700", color: palette.text, marginBottom: palette.spacing.xs}}>{t('auth.logout')}</ThemedText> 
-          <ThemedText style={[styles.sectionDescription, {fontSize: palette.font.small}]}> 
-            Administra tu cuenta y cierra sesión de forma segura. 
+          <ThemedText style={[styles.sectionDescription, {fontSize: palette.font.small}]}>
+            {t('profile.accountDescription')}
           </ThemedText> 
           <ThemedButton 
             title={authLoading ? t('auth.loggingOut') : t('auth.logout')} 

@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopago-frontend
+  namespace: yopago
+  labels:
+    app: yopago-frontend
+    app.kubernetes.io/name: yopago-frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: yopago
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yopago-frontend
+  template:
+    metadata:
+      labels:
+        app: yopago-frontend
+        app.kubernetes.io/name: yopago-frontend
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/part-of: yopago
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: frontend
+          # Reemplaza <YOUR_ACR_NAME> con el nombre de tu Azure Container Registry
+          # Ej: yopagoacr.azurecr.io/yopago-frontend:latest
+          # IMPORTANTE: la imagen debe construirse con los build args:
+          #   EXPO_PUBLIC_BASE_URL=https://<YOUR_DOMAIN>/api
+          #   EXPO_PUBLIC_ISSUER=https://auth.<YOUR_DOMAIN>/realms/yopago
+          image: <YOUR_ACR_NAME>.azurecr.io/yopago-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yopago-frontend
+  namespace: yopago
+  labels:
+    app: yopago-frontend
+    app.kubernetes.io/name: yopago-frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: yopago
+spec:
+  type: ClusterIP
+  selector:
+    app: yopago-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
